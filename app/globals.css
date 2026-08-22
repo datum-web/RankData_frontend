@@ -1,0 +1,537 @@
+:root {
+  --bg: #0f1216;
+  --panel: #171b21;
+  --panel-2: #1e242c;
+  --line: #2b333d;
+  --ink: #e6eaf0;
+  --muted: #93a0b0;
+  --accent: #6ec3c0;
+  --warm: #e08a3c;
+  --good: #5fbf7d;
+  --bad: #d8695f;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.5 ui-sans-serif, -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+}
+
+.wrap { max-width: 1360px; margin: 0 auto; padding: 20px 24px 64px; }
+
+header.bar {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px;
+}
+header.bar h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+.badge {
+  font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 4px 8px; border-radius: 999px; background: var(--panel-2);
+  color: var(--muted); border: 1px solid var(--line);
+}
+.badge.warn { color: var(--warm); border-color: #4a3520; }
+.spacer { flex: 1; }
+
+.grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1080px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 14px;
+}
+.card h2 {
+  margin: 0 0 10px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--muted); font-weight: 600;
+}
+
+.shot { width: 100%; display: block; border-radius: 8px; background: #fff; }
+.refshot { border: 2px solid var(--accent); }
+
+/* `minmax(0, 1fr)`, never a bare `1fr`.
+   A bare `1fr` is `minmax(auto, 1fr)`, and `auto` floors the track at its
+   min-content width — so one unbreakable candidate id widens the column, the
+   grid outgrows the viewport, and the page scrolls sideways with the right-hand
+   card hanging off the screen. `word-break` cannot save it: the track width is
+   settled before the text is allowed to wrap. */
+.pairgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.side { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.side.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.side h3 {
+  margin: 0 0 10px; font-size: 12px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .09em; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+}
+.key {
+  font: 600 10px/1 ui-monospace, Menlo, monospace; color: var(--ink);
+  background: var(--panel-2); border: 1px solid var(--line);
+  padding: 3px 6px; border-radius: 5px;
+}
+
+table.metrics { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.metrics th {
+  text-align: right; font-weight: 600; color: var(--muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .07em; padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+table.metrics th:first-child { text-align: left; }
+table.metrics td { padding: 7px 8px; border-bottom: 1px solid #222932; text-align: right; }
+table.metrics td:first-child { text-align: left; color: var(--ink); }
+table.metrics tr:hover td { background: #1b2129; }
+.metricname { display: flex; flex-direction: column; gap: 2px; }
+.metricname small { color: var(--muted); font-size: 11px; font-weight: 400; }
+.num { font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.win { color: var(--good); font-weight: 650; }
+.lose { color: var(--muted); }
+.na { color: #5b6673; font-style: italic; }
+.favours {
+  font: 600 10px/1 ui-monospace, Menlo, monospace; padding: 3px 6px;
+  border-radius: 5px; border: 1px solid var(--line); color: var(--muted);
+}
+.favours.L { color: var(--accent); border-color: #2d4f4e; }
+.favours.R { color: var(--warm); border-color: #4a3520; }
+
+.controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+button.choice {
+  flex: 1; min-width: 150px; padding: 13px 14px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: .12s;
+}
+button.choice:hover { border-color: var(--accent); }
+button.choice[data-on="1"] { background: var(--accent); color: #0c1214; border-color: var(--accent); }
+
+.conf { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Anchors styled as controls need the same rules: a selector scoped to
+   `button` leaves every <Link> rendering as a bare blue browser link. */
+button.pill, a.pill {
+  display: inline-block; padding: 8px 13px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
+  cursor: pointer; font-size: 13px; text-decoration: none; line-height: 1.2;
+}
+button.pill:hover, a.pill:hover { border-color: var(--accent); color: var(--ink); }
+button.pill[data-on="1"] { background: var(--ink); color: #10151a; border-color: var(--ink); font-weight: 600; }
+
+button.submit, a.submit {
+  display: inline-block; padding: 13px 22px; border-radius: 9px; border: 0;
+  cursor: pointer; background: var(--accent); color: #08100f;
+  font-size: 14px; font-weight: 700; text-decoration: none; line-height: 1.2;
+}
+a.submit:hover { filter: brightness(1.08); }
+button.submit:disabled { background: #2b333d; color: #6b7683; cursor: not-allowed; }
+
+input.text, textarea.text {
+  width: 100%; padding: 9px 11px; border-radius: 8px; font-size: 13px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+  font-family: inherit;
+}
+label.field { display: block; margin-bottom: 12px; }
+label.field span { display: block; font-size: 11px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; font-weight: 600; }
+
+.note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.warnrow { color: var(--warm); font-size: 12px; margin-top: 8px; }
+.kv { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 12px; }
+.kv span:first-child { color: var(--muted); }
+.kv span:last-child { font-family: ui-monospace, Menlo, monospace; }
+.done { text-align: center; padding: 60px 20px; }
+.done h2 { font-size: 20px; margin-bottom: 8px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+
+/* One-click verdict scale. Seven graded steps: direction and strength in a
+   single press, so a pair costs one click rather than three. */
+/* Three buttons fit across anything, phone included, so there is no
+   breakpoint here any more -- they just get taller on a phone. */
+.scale { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+button.step {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 6px 10px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+  transition: .12s; line-height: 1.25;
+}
+button.step:hover:not(:disabled) {
+  border-color: var(--accent); background: #1f2a2b; transform: translateY(-1px);
+}
+button.step:disabled { opacity: .45; cursor: not-allowed; }
+button.step b { font-size: 14px; font-weight: 650; white-space: nowrap; }
+button.step small { color: var(--muted); font-size: 11px; }
+button.step.tie { background: #1a1e24; }
+button.step.tie b { color: var(--muted); }
+button.step .key { margin-top: 2px; opacity: .55; padding: 2px 5px; }
+
+.rowend { display: flex; justify-content: flex-end; align-items: center; gap: 10px; min-height: 30px; }
+
+/* Corpus spread. The raw number cannot be read as good or bad on its own, so
+   each row shows where the two candidates fall between the corpus min and max:
+   shaded band = middle half, tick = median, dots = this pair. */
+.spread {
+  position: relative; height: 20px; width: 100%; min-width: 140px;
+  border-radius: 4px; background: #141920; border: 1px solid #222932;
+}
+.spread .band { position: absolute; top: 0; bottom: 0; background: #1e2630; }
+.spread .med { position: absolute; top: 2px; bottom: 2px; width: 1px; background: #4a5766; }
+.spread .dot {
+  position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+  transform: translate(-50%, -50%); border: 1.5px solid #0f1216;
+}
+.spread .dot.L { background: var(--accent); }
+.spread .dot.R { background: var(--warm); }
+.constant { color: #5b6673; font-size: 11px; font-style: italic; }
+
+/* Percentile placement, not linear min-max: a single outlier squashes a linear
+   track into uselessness. Middle of the track = a typical score for that metric. */
+.spreadwrap { display: flex; flex-direction: column; gap: 3px; min-width: 150px; }
+.ranks { display: flex; justify-content: space-between; font: 500 10px/1 ui-monospace, Menlo, monospace; }
+.rk.L { color: var(--accent); }
+.rk.R { color: var(--warm); }
+
+/* Dashboard */
+.hero { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+.big { font-size: 30px; font-weight: 700; letter-spacing: -.4px; }
+.big .of { font-size: 15px; font-weight: 500; color: var(--muted); }
+.bar-track { height: 8px; border-radius: 999px; background: var(--panel-2); margin-top: 10px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); transition: width .3s; }
+a.submit.start { white-space: nowrap; }
+
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .cards3 { grid-template-columns: minmax(0, 1fr); } }
+
+.ratebar {
+  position: relative; height: 20px; border-radius: 5px;
+  background: var(--panel-2); overflow: hidden;
+}
+.ratefill { height: 100%; background: #2f5f57; }
+.ratetxt {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font: 600 11px/1 ui-monospace, Menlo, monospace; color: var(--ink);
+}
+
+/* The title is the way home from every screen. Styled as the heading it is,
+   not as a link — the affordance is the hover, not a blue underline. */
+a.home { text-decoration: none; color: inherit; display: inline-block; }
+a.home h1 { transition: color .12s; }
+a.home:hover h1 { color: var(--accent); }
+
+/* Identifiers are for citing a case in conversation, so they must be copyable
+   and unambiguous rather than pretty. */
+.idtag { font: 500 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; user-select: all; }
+.badge.case { color: var(--accent); border-color: #2d4f4e; font-weight: 600; }
+
+/* Judging layout: reference on top and centred, the two candidates beneath it,
+   the verdict immediately under them. Choosing should not require looking away
+   from what is being judged. */
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.refcard { max-width: 380px; margin: 0 auto; text-align: center; }
+.refcard .shot { max-width: 230px; margin: 0 auto; }
+
+/* Cap the candidate renders. At full width three 2x2 composites plus the
+   controls cannot fit any normal viewport, and the point of moving the buttons
+   under the images was to stop the eye travelling. */
+.pairgrid .shot { max-height: 300px; object-fit: contain; }
+.refmeta {
+  display: flex; justify-content: center; gap: 18px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 12px; color: var(--muted);
+}
+.refmeta b { color: var(--muted); font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; font-size: 10px; margin-right: 4px; }
+/* The verdict follows the viewport. Even capped, a tall pair can push the
+   controls off screen on a short window; sticky keeps one click always within
+   reach without hunting for it. */
+.verdict {
+  padding-top: 12px;
+  position: sticky; bottom: 12px; z-index: 5;
+  background: #141920f2; backdrop-filter: blur(8px);
+  box-shadow: 0 -6px 18px #0b0e12cc;
+}
+/* A sticky bar overlays whatever is under it, and what is under it here is the
+   thing being judged. The page gets enough tail room to scroll any candidate
+   clear of the bar instead of leaving part of it permanently covered. */
+.stack { padding-bottom: 150px; }
+
+/* Case table: dense on purpose — the point is to scan many rows for the ones
+   where the metrics and the people part company. */
+table.metrics.cases td, table.metrics.cases th { padding: 5px 7px; font-size: 12px; }
+table.metrics.cases .num { font-size: 11.5px; }
+select.text { padding: 7px 9px; }
+
+/* Visual review: reference, left, right, with the chosen one outlined. */
+.reviewrow { margin-bottom: 16px; }
+.rvhead { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.rvimgs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+@media (max-width: 900px) { .rvimgs { grid-template-columns: minmax(0, 1fr); } }
+.rvcell {
+  margin: 0; padding: 8px; border-radius: 9px;
+  border: 2px solid transparent; background: var(--panel-2);
+}
+/* The chosen candidate. A ring plus a word: colour alone should not be the only
+   carrier of the single most important fact on the row. */
+.rvcell.picked { border-color: var(--good); background: #17241c; }
+.rvcell figcaption {
+  margin-top: 7px; font-size: 11px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em; text-align: center;
+}
+.rvcell figcaption .idtag { text-transform: none; letter-spacing: 0; }
+.rvcell .chosen { color: var(--good); font-weight: 700; }
+.rvcell .shot { max-height: 210px; object-fit: contain; }
+table.compactmetrics td, table.compactmetrics th { padding: 4px 7px; font-size: 11px; }
+
+/* --- score band -----------------------------------------------------------
+   The metric comparison sits between the images and the verdict buttons. It
+   used to live below them, and with a one-click verdict nobody ever scrolled
+   that far, so the numbers were on the page but not in the decision. Columns
+   line up with the left/right images above. */
+.scoreband { padding: 12px 16px; margin-bottom: 12px; }
+.scorehead, .scorerow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 108px 88px;
+  align-items: center;
+  gap: 8px;
+}
+.scorehead {
+  font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.scorerow { padding: 5px 0; border-bottom: 1px solid var(--line); }
+.scorerow:last-of-type { border-bottom: 0; }
+.scoreband .mname { font-size: 13px; color: var(--ink); }
+.scoreband .num {
+  text-align: right; font-variant-numeric: tabular-nums;
+  font-size: 13px; color: var(--muted);
+}
+.scoreband .num.win { color: var(--good); font-weight: 600; }
+.scoreband .who {
+  text-align: center; font-size: 13px; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.scoreband .who.left, .scoreband .who.right { color: var(--good); }
+.scoreband .who em {
+  font-style: normal; font-size: 11px; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.scorenote { margin: 10px 0 0; font-size: 12px; }
+@media (max-width: 720px) {
+  .scorehead, .scorerow { grid-template-columns: minmax(0, 1fr) 64px 76px 64px; }
+}
+
+/* --- score anchor ---------------------------------------------------------
+   One side of an anchor pair is the number itself. It occupies the same slot
+   as a render so the two sides stay visually comparable. */
+.anchorcard {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; min-height: 220px; max-height: 300px;
+  border: 1px dashed var(--line); border-radius: 8px; background: var(--panel);
+}
+.anchorlabel {
+  font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.anchorvalue {
+  font-size: 68px; line-height: 1; font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.anchorhint { font-size: 12px; color: var(--muted); max-width: 22ch; text-align: center; }
+.anchornote { margin: 0 0 12px; }
+
+/* The review table now carries values, not a yes/no, so the numbers need to
+   line up column to column and the chosen side needs to read at a glance. */
+table.compactmetrics td.num { font-variant-numeric: tabular-nums; text-align: right; }
+table.compactmetrics tbody tr:first-child td,
+table.compactmetrics tbody tr:nth-child(2) td { font-size: 12px; }
+table.compactmetrics tbody tr:nth-child(3) td { opacity: .75; }
+
+/* Two stacked values per metric cell. A single delta hid the number whenever
+   one side had none — every anchor pair — so both are printed and the cell
+   tint carries the agreement instead. */
+td.twoval { line-height: 1.25; }
+td.twoval span { display: block; font-variant-numeric: tabular-nums; color: var(--muted); }
+td.twoval span.win { color: var(--good); font-weight: 600; }
+td.twoval.agreed { background: color-mix(in srgb, var(--good) 9%, transparent); }
+td.twoval.opposed { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+td.twoval .whymark {
+  display: inline-block; font-size: 10px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 50%;
+  width: 13px; height: 13px; line-height: 12px; text-align: center; cursor: help;
+}
+
+/* --- blown-up comparison --------------------------------------------------
+   Four fixed 384-pixel views are not enough to judge a gear tooth from, so a
+   click opens the solids themselves. One camera drives all three panels. */
+.zoomable { cursor: zoom-in; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(8, 11, 15, .88);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  overflow: auto;
+}
+.lbinner {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px; width: min(1500px, 96vw);
+}
+.lbgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.lbcell { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.lbcell.focused { border-color: var(--good); }
+.lbfig { margin: 0; }
+.lbfig img { width: 100%; display: block; background: #fff; }
+.lbfig figcaption { padding: 8px 10px; font-size: 12px; color: var(--muted); }
+.v3d { display: flex; flex-direction: column; }
+.v3dcanvas {
+  width: 100%; height: min(58vh, 520px);
+  touch-action: none; cursor: grab; background: #10151b;
+}
+.v3dcanvas:active { cursor: grabbing; }
+.v3dcanvas canvas { display: block; width: 100%; height: 100%; }
+.v3dfoot {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; font-size: 12px; border-top: 1px solid var(--line);
+}
+@media (max-width: 1000px) {
+  .lbgrid { grid-template-columns: minmax(0, 1fr); }
+  .v3dcanvas { height: 46vh; }
+}
+
+/* ---- back to top -------------------------------------------------------- */
+/* Fixed, low-contrast until hovered: it should be findable on a long page and
+   invisible on a short one, not a permanent floating advert. */
+.totop {
+  position: fixed; right: 22px; bottom: 22px; z-index: 40;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--panel); color: var(--muted);
+  border: 1px solid var(--line); cursor: pointer;
+  font-size: 17px; line-height: 1;
+  box-shadow: 0 6px 18px rgba(0,0,0,.45);
+  transition: color .15s, border-color .15s, transform .15s;
+}
+.totop:hover { color: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+
+/* ---- family distribution ------------------------------------------------ */
+.famchart { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 780px) { .famchart { grid-template-columns: minmax(0, 1fr); } }
+.famring { display: flex; justify-content: center; }
+.famring path { cursor: default; transition: stroke-width .12s, opacity .12s; }
+.fambig { fill: var(--ink); font: 650 26px/1 ui-monospace, Menlo, monospace; }
+.famsub { fill: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+
+.famstats { display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 6px; }
+.famstats div { display: flex; flex-direction: column; gap: 2px; }
+.famstats b { font: 650 21px/1 ui-monospace, Menlo, monospace; color: var(--ink); }
+.famstats span { color: var(--muted); font-size: 11px; }
+
+.fambars { display: flex; flex-direction: column; gap: 3px; }
+.fambar { display: grid; grid-template-columns: 148px minmax(0, 1fr) 34px; gap: 10px; align-items: center; }
+.fambar.on .fname { color: var(--ink); }
+.fname {
+  color: var(--muted); font-size: 12px; text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ftrack { height: 9px; background: #1a2027; border-radius: 3px; overflow: hidden; }
+.ffill { display: block; height: 100%; border-radius: 3px; }
+.fnum { font: 500 12px/1 ui-monospace, Menlo, monospace; color: var(--muted); text-align: right; }
+
+/* ---- flip comparison ----------------------------------------------------- */
+/* Reference plus one candidate in a fixed slot. Two panels, not three, so each
+   one is twice the size on a narrow screen -- and because the pictures do not
+   move between taps, the thing that changes is the thing that differs. */
+.lbgrid.flip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 720px) { .lbgrid.flip { grid-template-columns: minmax(0, 1fr); } }
+
+.flipbar {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; margin-top: 10px; padding: 14px 16px;
+  min-height: 52px;                     /* thumb-sized, not pointer-sized */
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel-2); color: var(--ink);
+  font-size: 15px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.flipbar:active { background: var(--line); }
+.flipbar b { color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+.flipkey {
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--line);
+  border-radius: 5px; padding: 2px 7px;
+}
+@media (max-width: 720px) { .flipkey { display: none; } }   /* no keyboard there */
+
+/* ---- phone --------------------------------------------------------------- */
+/* Everything below is about one screen: a ~390px phone held in one hand.
+   The two candidates stay side by side even here -- stacking them would make
+   the comparison a memory test -- but every piece of chrome around them gives
+   up its width, and the controls grow to thumb size. */
+@media (max-width: 720px) {
+  .wrap { padding: 14px 12px 56px; }
+
+  /* The cap exists to stop a render dominating a wide screen. On a phone it is
+     the render that needs the room. */
+  .pairgrid { gap: 8px; }
+  .pairgrid .shot { max-height: none; }
+  .refcard { max-width: none; }
+  /* Full width, but never the whole screen. Removing the desktop cap outright
+     made the reference ~500 px tall on a 556 px viewport, so the two candidates
+     — the thing being compared — started below the fold on every pair. */
+  .refcard .shot { max-width: none; max-height: 42vh; object-fit: contain; }
+
+  /* Seven targets do not fit across a phone; two rows of thumb-sized ones do.
+     44px is the smallest reliable touch target. */
+  .scale { gap: 6px; }
+  .scale button.step { min-height: 52px; padding: 8px 4px 6px; }
+  .scale button.step .key { display: none; }   /* no keyboard on a phone */
+
+  .kv { font-size: 12px; }
+
+  table.metrics { font-size: 12px; }
+  .lbinner { padding: 12px; }
+  .totop { right: 12px; bottom: 12px; }
+}
+
+/* ---- blind arm ----------------------------------------------------------- */
+/* An empty space where the numbers usually sit reads as a broken page, and a
+   rater who thinks the tool is broken judges differently from one who knows the
+   numbers are being withheld. So the gap says what it is. */
+.blindcard {
+  display: flex; flex-direction: column; gap: 6px;
+  border-style: dashed; margin-bottom: 16px;
+}
+.blindcard b { color: var(--accent); }
+.blindcard span { color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+/* ---- wide tables ---------------------------------------------------------
+   A metric table has six columns and a floor width of ~550 px. Below that it
+   must scroll inside its own box, not push the page sideways — at 390 px the
+   grading page overflowed by 172 px and the admin page by 626, with the whole
+   layout dragged along and the verdict buttons off-screen.
+
+   `/cases` already did this with an inline style. The other two did not, which
+   is the usual shape: the right answer existed in the codebase and was not
+   reachable from the places that needed it. */
+.scrollx { overflow-x: auto; }
+
+/* ---- long unbreakable values --------------------------------------------
+   A candidate id and a model name are single tokens 30-40 characters long
+   (`xai/v9-learnability:reasoning=high`), and a `.kv` row sits inside a grid
+   track. An unbreakable token sets that track's min-content width, so at
+   390 px the card was 195 px wider than the viewport and the page scrolled
+   sideways — with `minmax(0, 1fr)` already in place, because that lets the
+   track shrink but cannot make the text fit.
+
+   `overflow-wrap: anywhere` rather than `word-break: break-all`: both lower the
+   min-content width, which is the part that matters here, but `break-all`
+   breaks eagerly mid-word even when the line has room, and these values are
+   read, not skimmed. `anywhere` breaks only when the alternative is overflow.
+
+   Not inside a media query. The bug is a function of content length against
+   available width, and a wide screen with a long enough id has it too. */
+/* The VALUE absorbs the pressure, never the label.
+   Applying this to every `.kv span` broke the labels too: `.kv` is a flex row,
+   the label is its first child, and at 390 px "candidate" came out as
+   can / did / ate down three lines. The label is a short word and should stay
+   whole; the identifier next to it is the thing that has to give. */
+.kv span:last-child, .idtag { overflow-wrap: anywhere; min-width: 0; }
+.kv span:first-child { white-space: nowrap; flex: none; }
+
+/* A `width: auto` select is as wide as its longest option, and the rater
+   dropdown holds full email addresses. At 320 px that alone pushed the page
+   sideways. Capped rather than made narrow: on a wide screen it still shows the
+   whole address. */
+select.text { max-width: 100%; }
