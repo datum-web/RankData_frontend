@@ -230,7 +230,11 @@ a.home:hover h1 { color: var(--accent); }
    it, and four views of a CAD part at 110px is not something a person can
    judge from. It is now the largest, which is the order that matches what the
    eye has to do. */
-.refcard .shot { max-width: none; max-height: 360px; object-fit: contain; margin: 0 auto; }
+/* The renders are 524x524. Capping the reference at 360 threw away a third
+   of the resolution on the one panel both candidates are judged against.
+   460 stays under native so nothing is ever upscaled, and keeps the
+   verdict buttons reachable without scrolling on a laptop. */
+.refcard .shot { max-width: none; max-height: 460px; object-fit: contain; margin: 0 auto; }
 
 /* Cap the candidate renders. At full width three 2x2 composites plus the
    controls cannot fit any normal viewport, and the point of moving the buttons
