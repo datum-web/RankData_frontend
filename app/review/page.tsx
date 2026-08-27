@@ -13,11 +13,10 @@ import BackToTop from "../BackToTop";
  * would mirror half the rows and make a review of your own choices misleading.
  */
 
-const KEYS = ["v1_iou", "aligned_iou", "topology", "face", "edge", "bspace_min", "q_l"] as const;
-const SHORT: Record<string, string> = {
-  v1_iou: "v1 IoU", aligned_iou: "aligned", topology: "topo",
-  face: "face", edge: "edge", bspace_min: "B-min", q_l: "Q_L",
-};
+// The columns come from the API, which reads the one registry in lib/types.
+// This page used to carry its own copy of the key list and its abbreviations;
+// two copies of a list is one copy too many, and the second was already stale.
+type MetricCol = { key: string; label: string; short: string };
 const CONF: Record<number, string> = { 1: "tie", 2: "slightly", 3: "better", 4: "much better" };
 
 type Filter = "all" | "disagreed" | "unsure" | "quick";
@@ -38,6 +37,9 @@ export default function ReviewPage() {
     const q = new URLSearchParams(window.location.search).get("rater");
     if (q) setAsRater(q);
   }, []);
+
+  const COLS: MetricCol[] = useMemo(
+    () => (data?.metrics ?? []) as MetricCol[], [data]);
 
   const load = useCallback(async () => {
     const res = await fetch(
@@ -60,7 +62,7 @@ export default function ReviewPage() {
       .filter((r: any) => family === "all" || r.family === family)
       .filter((r: any) => {
         if (filter === "disagreed") {
-          return KEYS.some((k) => r.metrics[k]?.agree != null && r.metrics[k].agree < 0.5);
+          return COLS.some(({ key: k }) => r.metrics[k]?.agree != null && r.metrics[k].agree < 0.5);
         }
         if (filter === "unsure") return r.verdicts.some((v: any) => v.confidence <= 2);
         if (filter === "quick") return r.verdicts.some((v: any) => (v.decision_ms ?? 1e9) < 4000);
@@ -199,7 +201,7 @@ export default function ReviewPage() {
                 <div className="scrollx">
                 <table className="metrics compactmetrics">
                   <thead>
-                    <tr><th /> {KEYS.map((k) => <th key={k}>{SHORT[k]}</th>)}</tr>
+                    <tr><th /> {COLS.map((c) => <th key={c.key} title={c.label}>{c.short}</th>)}</tr>
                   </thead>
                   <tbody>
                     {(["left", "right"] as const).map((s) => (
@@ -207,7 +209,7 @@ export default function ReviewPage() {
                         <td className={v.chose_side === s ? "win" : "lose"}>
                           {s}{v.chose_side === s && " ✓"}
                         </td>
-                        {KEYS.map((k) => {
+                        {COLS.map(({ key: k }) => {
                           const m = r.metrics[k];
                           const mine = side(m, s);
                           const other = side(m, s === "left" ? "right" : "left");
@@ -222,7 +224,7 @@ export default function ReviewPage() {
                     ))}
                     <tr>
                       <td className="lose">gap</td>
-                      {KEYS.map((k) => {
+                      {COLS.map(({ key: k }) => {
                         const m = r.metrics[k];
                         const l = side(m, "left"), rt = side(m, "right");
                         const d = l != null && rt != null ? Math.abs(l - rt) : null;
@@ -235,7 +237,7 @@ export default function ReviewPage() {
                     </tr>
                     <tr>
                       <td className="lose">agreed?</td>
-                      {KEYS.map((k) => {
+                      {COLS.map(({ key: k }) => {
                         const m = r.metrics[k];
                         return (
                           <td key={k} className={`num ${

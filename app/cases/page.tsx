@@ -13,11 +13,10 @@ import { explainWarnings } from "@/lib/corpus";
  * filtered down to the rows where the metrics and the people part company.
  */
 
-const KEYS = ["v1_iou", "aligned_iou", "topology", "face", "edge", "bspace_min", "q_l"] as const;
-const SHORT: Record<string, string> = {
-  v1_iou: "v1 IoU", aligned_iou: "aligned", topology: "topo",
-  face: "face", edge: "edge", bspace_min: "B-min", q_l: "Q_L",
-};
+// The columns come from the API, which reads the one registry in lib/types.
+// This page used to carry its own copy of the key list and its abbreviations;
+// two copies of a list is one copy too many, and the second was already stale.
+type MetricCol = { key: string; label: string; short: string };
 
 const num = (v: number | null | undefined, d = 3) =>
   v == null ? "—" : v.toFixed(d);
@@ -41,6 +40,9 @@ export default function CasesPage() {
   const [filter, setFilter] = useState<Filter>("judged");
   const [family, setFamily] = useState("all");
   const [cohort, setCohort] = useState("all");
+
+  const COLS: MetricCol[] = useMemo(
+    () => (data?.metrics ?? []) as MetricCol[], [data]);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/cases", { cache: "no-store" });
@@ -67,7 +69,7 @@ export default function CasesPage() {
       if (filter === "judged") return r.judged > 0;
       // A metric said one thing and the person said the other.
       if (filter === "disputed") {
-        return r.judged > 0 && KEYS.some((k) => {
+        return r.judged > 0 && COLS.some(({ key: k }) => {
           const m = r.metrics[k];
           return m?.agree != null && m.agree < 0.5;
         });
@@ -149,7 +151,7 @@ export default function CasesPage() {
             <thead>
               <tr>
                 <th>case</th><th>family</th><th>cohort</th>
-                {KEYS.map((k) => <th key={k}>{SHORT[k]}</th>)}
+                {COLS.map((c) => <th key={c.key} title={c.label}>{c.short}</th>)}
                 <th>metrics split</th><th>verdicts</th>
               </tr>
             </thead>
@@ -165,7 +167,7 @@ export default function CasesPage() {
                       seven scores all exist — and again whenever the two sides
                       were exactly equal, which is most of topology. The number
                       that was computed should be on screen. */}
-                  {KEYS.map((k) => {
+                  {COLS.map(({ key: k }) => {
                     const m = r.metrics[k];
                     const agreeCls = m?.agree == null ? "" : m.agree >= 0.5 ? " agreed" : " opposed";
                     return (

@@ -233,6 +233,34 @@ export default function GradePage() {
     fetch("/api/stats", { cache: "no-store" }).then((r) => r.json()).then(setStats).catch(() => {});
   }, []);
 
+  // Warm the next pair while this one is being looked at.
+  //
+  // Judging is one click, and everything after that click was serial: POST the
+  // verdict, GET the next pair, then three renders pulled through `/api/image`
+  // from private storage one after another. The rater waited through all of it
+  // between every verdict. None of it has to happen then -- the next pair is
+  // knowable as soon as this one is on screen.
+  //
+  // `?after=` consumes nothing, so a prefetch that is never used costs one
+  // request. `new Image()` puts the renders in the browser's own cache, which
+  // is what the real `<img>` will hit a moment later.
+  useEffect(() => {
+    if (!view?.pair?.id) return;
+    let dead = false;
+    const t = setTimeout(() => {
+      fetch(`/api/pairs?after=${encodeURIComponent(view.pair.id)}`, { cache: "no-store" })
+        .then((r) => r.json())
+        .then((next) => {
+          if (dead || !next || next.error || next.done) return;
+          for (const src of [next.reference?.image, next.left?.image, next.right?.image]) {
+            if (src) new Image().src = `/api/image/${src}`;
+          }
+        })
+        .catch(() => {});
+    }, 400);   // let the current pair's own images win the connection first
+    return () => { dead = true; clearTimeout(t); };
+  }, [view?.pair?.id]);
+
   useEffect(() => {
     if (rater) void load(rater);
   }, [rater, load]);

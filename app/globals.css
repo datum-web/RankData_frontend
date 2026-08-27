@@ -224,8 +224,13 @@ a.home:hover h1 { color: var(--accent); }
    the verdict immediately under them. Choosing should not require looking away
    from what is being judged. */
 .stack { display: flex; flex-direction: column; gap: 16px; }
-.refcard { max-width: 380px; margin: 0 auto; text-align: center; }
-.refcard .shot { max-width: 230px; margin: 0 auto; }
+.refcard { max-width: 520px; margin: 0 auto; text-align: center; }
+/* The reference is a 2x2 composite, so a 230px cap left each view about 110px
+   -- the smallest picture on a page that exists to compare two things against
+   it, and four views of a CAD part at 110px is not something a person can
+   judge from. It is now the largest, which is the order that matches what the
+   eye has to do. */
+.refcard .shot { max-width: none; max-height: 360px; object-fit: contain; margin: 0 auto; }
 
 /* Cap the candidate renders. At full width three 2x2 composites plus the
    controls cannot fit any normal viewport, and the point of moving the buttons

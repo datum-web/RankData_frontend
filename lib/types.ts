@@ -21,6 +21,26 @@ export type Metrics = {
   dino_cos?: number | null;
   dino_stimulus?: string | null;
   dino_version?: string;
+  /** SAM3 concept agreement. `generic` is one fixed four-word list, `hand` is
+   *  cad-rl-reward's per-family lists, `vlm` reads the vocabulary off the
+   *  reference render. Under evaluation, not shown to raters -- see
+   *  ANALYSIS_ONLY below for why that distinction has to exist in code. */
+  sam3_generic?: number | null;
+  sam3_hand?: number | null;
+  sam3_vlm?: number | null;
+  sam3_stimulus?: string | null;
+  /** Depth-slice IoU: the silhouette metric over nested slices of the depth
+   *  buffer. Measured at rho 0.964 against silhouette IoU — it is the outline
+   *  again, on a harsher scale. Kept for the record, not a candidate. */
+  depth_iou?: number | null;
+  depth_version?: string;
+  /** Share of the part's pixels that look the same, on the exact composite the
+   *  rater sees. The only channel that clears all five gates: it responds to a
+   *  localised change instead of diluting it in an area ratio, which is what
+   *  the ceiling on four families actually was. */
+  pix_fg?: number | null;
+  pix_stimulus?: string | null;
+  pix_version?: string;
   warnings?: string[];
   errors?: unknown[];
   error?: string;
@@ -154,28 +174,73 @@ export type Judgment = {
   client?: Record<string, unknown>;
 };
 
-/** Display order and labels for the metric panel. Higher is always better. */
-export const METRIC_ROWS: {
+/**
+ * Two registries, and the split is a study-integrity requirement rather than
+ * tidiness.
+ *
+ * `METRIC_ROWS` is what a rater sees beside the two pictures. `ANALYSIS_ONLY`
+ * is everything else we compute. They were one array, which meant that adding
+ * a metric to the analysis pages also put it in front of the people whose
+ * verdicts are used to rank metrics -- and the down-select ranks by BLIND
+ * verdicts precisely because a sighted verdict measures how well a metric
+ * predicts a decision made while looking at that metric. A candidate under
+ * evaluation must not be able to reach the panel by being added to a list that
+ * looks like it is about analysis.
+ *
+ * Anything still being chosen between goes in ANALYSIS_ONLY. It moves up when
+ * the choice is made, not before.
+ */
+export type MetricRow = {
   key: keyof Metrics | "v1_iou";
   label: string;
   hint: string;
-}[] = [
-  { key: "v1_iou", label: "BenchCAD v1 IoU", hint: "overlap in the as-generated pose, no alignment" },
-  { key: "aligned_iou", label: "Aligned IoU", hint: "overlap after ADFCA pose alignment" },
-  { key: "topology", label: "Topology", hint: "solid / genus / void agreement" },
-  { key: "face", label: "Face spectrum", hint: "global face-type distribution agreement" },
-  { key: "edge", label: "Edge spectrum", hint: "global edge-type distribution agreement" },
-  { key: "bspace_min", label: "B-Space worst cell", hint: "worst local region; localises concentrated error" },
-  { key: "q_l", label: "Q_L (canonical)", hint: "I · T^0.40 · F^0.30 · E^0.30 at the deepest valid level" },
-  { key: "q_l_without_iou", label: "Q_L without IoU", hint: "structure only; reported when IoU is unavailable" },
+  /** Column heading for the dense analysis tables. Lives here rather than in
+   *  each page: `cases` and `review` each kept their own copy of the key list
+   *  and its abbreviations, so a metric added to the registry appeared on
+   *  neither, and a metric renamed appeared twice under two names. */
+  short?: string;
+};
+
+/** Display order and labels for the metric panel. Higher is always better. */
+export const METRIC_ROWS: MetricRow[] = [
+  { key: "v1_iou", label: "BenchCAD v1 IoU", hint: "overlap in the as-generated pose, no alignment", short: "v1 IoU" },
+  { key: "aligned_iou", label: "Aligned IoU", hint: "overlap after ADFCA pose alignment", short: "aligned" },
+  { key: "topology", label: "Topology", hint: "solid / genus / void agreement", short: "topo" },
+  { key: "face", label: "Face spectrum", hint: "global face-type distribution agreement", short: "face" },
+  { key: "edge", label: "Edge spectrum", hint: "global edge-type distribution agreement", short: "edge" },
+  { key: "bspace_min", label: "B-Space worst cell", hint: "worst local region; localises concentrated error", short: "B-min" },
+  { key: "q_l", label: "Q_L (canonical)", hint: "I · T^0.40 · F^0.30 · E^0.30 at the deepest valid level", short: "Q_L" },
+  { key: "q_l_without_iou", label: "Q_L without IoU", hint: "structure only; reported when IoU is unavailable", short: "Q_L-noI" },
   // Last, because it is the control rather than part of the stack: it looks at
   // the same 2x2 composite the rater does. On the 38 verdicts whose stimulus we
   // still hold it agreed with the human 73.7 % of the time, against 74.3 % for
   // 3D aligned IoU -- level, for no dependency beyond numpy.
-  { key: "sil_iou", label: "Silhouette IoU (2D)", hint: "overlap of the rendered outlines, on the very image shown" },
-  // Compressed near the top by construction -- interquartile spread 0.168
-  // against silhouette IoU's 0.381 -- so it separates candidates far less than
-  // its agreement rate suggests. Said in the hint rather than left to be
-  // rediscovered from the numbers.
-  { key: "dino_cos", label: "DINOv2 similarity (2D)", hint: "learned image similarity; agrees often but scores cluster high" },
+  { key: "sil_iou", label: "Silhouette IoU (2D)", hint: "overlap of the rendered outlines, on the very image shown", short: "sil" },
+  // The 2D metric the down-select chose. Share of the part's pixels that look
+  // the same, on the very composite above: the only candidate of eighteen to
+  // clear all five gates at 100 % coverage, including a held-out change of
+  // background. It is silhouette IoU made finer -- per-pixel appearance where
+  // the outline uses per-pixel occupancy -- which is why the two sit together.
+  { key: "pix_fg", label: "Pixel agreement (2D)", hint: "share of the part's pixels that look the same, on the image shown", short: "pix" },
 ];
+
+/**
+ * Computed and stored, shown on the analysis pages, deliberately absent from
+ * the rater's panel while the 2D metric down-select is open.
+ */
+export const ANALYSIS_ONLY: MetricRow[] = [
+  // Was on the rater's panel until the down-select finished. It fails gate 1
+  // (0.9341 across a render change, threshold 0.95) and gate 2 (interquartile
+  // spread 0.169 against a threshold of 0.25), and DINOv3 at matched size buys
+  // the first without the second. Kept and still computed -- it is the learned
+  // baseline every later proposal is measured against -- but it is not
+  // something to put in front of someone whose verdict decides metrics.
+  { key: "dino_cos", label: "DINOv2 similarity (2D)", hint: "learned image similarity; compressed near the top, IQR 0.169", short: "dino2" },
+  { key: "sam3_generic", label: "SAM3 generic (2D)", hint: "concept agreement, one fixed four-word vocabulary", short: "s3-gen" },
+  { key: "sam3_hand", label: "SAM3 hand (2D)", hint: "per-family vocabulary; 40 % of its scores are exactly 0", short: "s3-hand" },
+  { key: "sam3_vlm", label: "SAM3 VLM vocab (2D)", hint: "vocabulary read off the reference render; declines 5 % of pairs", short: "s3-vlm" },
+  { key: "depth_iou", label: "Depth-slice IoU (2D)", hint: "silhouette IoU over nested depth slices; measured as a restatement of the outline", short: "depth" },
+];
+
+/** Everything computed, for the analysis pages and the CSV export. */
+export const ANALYSIS_METRICS: MetricRow[] = [...METRIC_ROWS, ...ANALYSIS_ONLY];

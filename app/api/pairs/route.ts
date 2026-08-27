@@ -109,9 +109,20 @@ export async function GET(req: Request) {
     mode: url.searchParams.get("order") === "shuffle" ? "shuffle" : "informative",
   });
 
+  // `?after=<id>` returns the pair that follows the given one in this rater's
+  // queue, without consuming anything. It exists so the client can fetch the
+  // next pair's payload and warm its three renders while the rater is still
+  // looking at the current one -- the images stream through `/api/image` from
+  // private storage, so a cold pair is three proxied downloads after the click
+  // and the wait is the whole delay between judging and judging again.
+  const after = url.searchParams.get("after");
+  const following = () => {
+    const at = queue.findIndex((p) => p.id === after);
+    return at >= 0 ? queue[at + 1] : queue[0];
+  };
   const pair = wanted
     ? corpus.pairs.find((p) => p.id === wanted)
-    : queue[0];
+    : after ? following() : queue[0];
 
   if (!pair) {
     return NextResponse.json({

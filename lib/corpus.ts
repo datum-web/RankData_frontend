@@ -63,6 +63,36 @@ export function countsNow(
 }
 
 /**
+ * Which metrics a verdict may be paired with.
+ *
+ * `countsNow` answers "does this verdict still stand", and `stimulus_equivalent`
+ * is the claim that the render change "moves pixels but not which
+ * reconstruction is better". That is a statement about the *human's* answer. It
+ * is not a statement about a number computed from the pixels: the verdict
+ * survives the re-render, a silhouette or pixel score computed on the new
+ * images does not correspond to the picture that produced the verdict.
+ *
+ * Using `countsNow` for both put silhouette IoU at **0.470 agreement — below
+ * chance — on 164 verdicts**, while every solid-derived channel stayed in the
+ * seventies. That gap is the tell: 3D metrics are immune to a re-render and 2D
+ * metrics are not, so a split that healthy cannot be about the metrics.
+ * Restricted to the 47 verdicts whose own renders still exist, silhouette IoU
+ * is 0.723 and pix_fg 0.766.
+ *
+ * So: solid-derived metrics keep `countsNow`; picture-derived metrics require
+ * the verdict to carry the exact stimulus the metric was computed on.
+ */
+const PICTURE_DERIVED = /^(sil_iou|pix_fg|depth_iou|dino_cos|sam3_)/;
+
+export function countsForMetric(
+  metricKey: string,
+  j: { stimulus?: string | null; stimulus_equivalent?: boolean },
+): boolean {
+  if (!PICTURE_DERIVED.test(metricKey)) return countsNow(j);
+  return (j.stimulus ?? "") === CURRENT_STIMULUS;
+}
+
+/**
  * Evaluator warnings, as something a rater can act on.
  *
  * They were printed verbatim, which put strings like

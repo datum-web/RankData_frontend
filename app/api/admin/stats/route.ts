@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { allJudgments, backend, loadCorpus, listAccounts } from "@/lib/store";
-import { METRIC_ROWS } from "@/lib/types";
+import { ANALYSIS_METRICS } from "@/lib/types";
 import { isAdmin, raterFromRequest } from "@/lib/auth";
-import { countsNow, scoresFor } from "@/lib/corpus";
+import { countsForMetric, countsNow, scoresFor } from "@/lib/corpus";
 
 export const dynamic = "force-dynamic";
 
@@ -87,12 +87,12 @@ export async function GET(req: Request) {
   // — the exact divergence `lib/corpus` exists to prevent, in a file that
   // already imports from it. One definition, used here too.
   function metricAgreement(all: any[]) {
-    const mine = all.filter(countsNow);
+    const mine = all;
     const out: Record<string, { agree: number; n: number }> = {};
-    for (const row of METRIC_ROWS) {
+    for (const row of ANALYSIS_METRICS) {
       const key = row.key as string;
       let agree = 0, n = 0;
-      for (const j of mine) {
+      for (const j of mine.filter((x: any) => countsForMetric(key, x))) {
         if (j.is_tie || !j.chosen_id) continue;
         const pair = byPair.get(j.pair_id);
         if (!pair) continue;
@@ -179,12 +179,15 @@ export async function GET(req: Request) {
   // ---- per-metric agreement, split by cohort -------------------------------
   const cohorts = [...new Set(corpus.pairs.map((p) => p.cohort ?? "unlabelled"))];
   const scoredAll = judgments.filter((j) => !j.is_tie && j.chosen_id);
-  const metric_agreement = METRIC_ROWS.map((row) => {
+  const metric_agreement = ANALYSIS_METRICS.map((row) => {
     const key = row.key as string;
+    // Same rule as above: a picture-derived metric may only be paired with a
+    // verdict cast on the pictures it was computed from.
+    const eligible = (j: any) => countsForMetric(key, j);
     const row_out: any = { key, label: row.label, overall: null, by_cohort: {} };
     const count = (subset: any[]) => {
       let agree = 0, usable = 0;
-      for (const j of subset) {
+      for (const j of subset.filter(eligible)) {
         const pair = byPair.get(j.pair_id);
         if (!pair) continue;
         const va = val(scores.of(pair.a, pair.ref_id), key);
@@ -293,7 +296,7 @@ export async function GET(req: Request) {
       cohorts: tally(corpus.pairs.map((p) => p.cohort ?? "unlabelled")),
     },
     accounts: accounts.length,
-    metric_keys: METRIC_ROWS.map((m) => m.key as string),
+    metric_keys: ANALYSIS_METRICS.map((m) => m.key as string),
     raters: perRater,
     coverage,
     inter_rater: {

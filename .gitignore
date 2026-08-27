@@ -2,4 +2,10 @@ node_modules/
 .next/
 .data/
 .env.local
+.env*.local
+.vercel/
 public/pairs/
+__pycache__/
+.vercel
+.env*
+.env.production.local

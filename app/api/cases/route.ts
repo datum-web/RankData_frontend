@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { allJudgments, loadCorpus } from "@/lib/store";
-import { METRIC_ROWS } from "@/lib/types";
+import { ANALYSIS_METRICS } from "@/lib/types";
 import { isAdmin, raterFromRequest } from "@/lib/auth";
 import { countsNow, CURRENT_STIMULUS, scoresFor } from "@/lib/corpus";
 
@@ -113,7 +113,7 @@ export async function GET(req: Request) {
 
     // Which side each metric prefers, and whether that matched the human.
     const metrics: Record<string, any> = {};
-    for (const row of METRIC_ROWS) {
+    for (const row of ANALYSIS_METRICS) {
       const key = row.key as string;
       const va = val(a, key);
       const vb = val(b, key);
@@ -157,7 +157,8 @@ export async function GET(req: Request) {
   rows.sort((x, y) => (x.case_no ?? 0) - (y.case_no ?? 0));
   return NextResponse.json({
     rows,
-    metrics: METRIC_ROWS.map((m) => ({ key: m.key, label: m.label })),
+    metrics: ANALYSIS_METRICS.map((m) => ({ key: m.key, label: m.label,
+                                           short: m.short ?? (m.key as string) })),
     viewing: subject,
     is_admin: admin,
     // Only an administrator gets the roster; for anyone else the list of who

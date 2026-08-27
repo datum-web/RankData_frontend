@@ -3,7 +3,7 @@
  * and the reason a score is missing.
  */
 import { describe, expect, it } from "vitest";
-import { countsNow, explainWarnings, scoresFor, CURRENT_STIMULUS } from "../corpus";
+import { countsNow, explainWarnings, scoresFor, CURRENT_STIMULUS , countsForMetric } from "../corpus";
 
 describe("scoresFor", () => {
   // A score belongs to (candidate, the reference the pair shows), not to the
@@ -90,5 +90,39 @@ describe("explainWarnings", () => {
     expect(explainWarnings()).toEqual([]);
     expect(explainWarnings(null)).toEqual([]);
     expect(explainWarnings([])).toEqual([]);
+  });
+});
+
+/**
+ * A verdict survives a re-render; a number computed from the pixels does not.
+ * Pairing the two was measured putting silhouette IoU below chance, so the
+ * distinction is enforced rather than remembered.
+ */
+describe("countsForMetric", () => {
+  const equiv = { stimulus: "per-shape-normalised-v0", stimulus_equivalent: true };
+  const current = { stimulus: CURRENT_STIMULUS };
+  const stale = { stimulus: "harness-normalised", stimulus_equivalent: false };
+
+  it("lets solid-derived metrics use an equivalence-flagged verdict", () => {
+    for (const k of ["aligned_iou", "q_l", "topology", "face", "edge", "bspace_min"]) {
+      expect(countsForMetric(k, equiv)).toBe(true);
+    }
+  });
+
+  it("refuses an equivalence-flagged verdict for every picture-derived metric", () => {
+    for (const k of ["sil_iou", "pix_fg", "depth_iou", "dino_cos",
+                     "sam3_generic", "sam3_vlm"]) {
+      expect(countsForMetric(k, equiv)).toBe(false);
+    }
+  });
+
+  it("accepts the current stimulus for both kinds", () => {
+    expect(countsForMetric("sil_iou", current)).toBe(true);
+    expect(countsForMetric("aligned_iou", current)).toBe(true);
+  });
+
+  it("refuses a stale stimulus for a picture metric even without the flag", () => {
+    expect(countsForMetric("pix_fg", stale)).toBe(false);
+    expect(countsForMetric("aligned_iou", stale)).toBe(false);
   });
 });
