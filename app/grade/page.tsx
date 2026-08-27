@@ -521,23 +521,24 @@ export default function GradePage() {
 
       {view && (
         <div className="stack">
-          {/* Reference on top and centred: it is what both candidates are being
-              measured against, so it belongs above them rather than off to one
-              side where the eye has to travel to it. */}
-          <div className="card refcard">
-            <h2>Reference — ground truth</h2>
-            <img className="shot refshot zoomable" src={`/api/image/${view.reference.image}`}
-                 alt="reference" onClick={() => openZoom("reference")}
-                 title="click to open the solid, turnable and full size" />
-            <div className="refmeta">
-              <span><b>case</b> <span className="idtag">#{view.pair.case_no ?? "—"}</span></span>
-              <span><b>GT</b> <span className="idtag">{view.reference.id}</span></span>
-              <span><b>family</b> {view.reference.family}</span>
-            </div>
-          </div>
-
           <div>
+            {/* Reference beside the candidates rather than above them.
+                Stacked, the reference alone filled the first screen and the two
+                things it was being compared against were a scroll away, which
+                turns every judgment into a memory test. Three across fits the
+                1360px container with room for all three at 430px. */}
             <div className="pairgrid" style={{ marginBottom: 12 }}>
+              <div className="card refcard">
+                <h2>Reference — ground truth</h2>
+                <img className="shot refshot zoomable" src={`/api/image/${view.reference.image}`}
+                     alt="reference" onClick={() => openZoom("reference")}
+                     title="click to open the solid, turnable and full size" />
+                <div className="refmeta">
+                  <span><b>case</b> <span className="idtag">#{view.pair.case_no ?? "—"}</span></span>
+                  <span><b>GT</b> <span className="idtag">{view.reference.id}</span></span>
+                  <span><b>family</b> {view.reference.family}</span>
+                </div>
+              </div>
               {(["left", "right"] as const).map((side) => {
                 const cand = side === "left" ? view.left : view.right;
                 return (

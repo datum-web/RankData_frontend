@@ -58,7 +58,9 @@ header.bar h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .2
    grid outgrows the viewport, and the page scrolls sideways with the right-hand
    card hanging off the screen. `word-break` cannot save it: the track width is
    settled before the text is allowed to wrap. */
-.pairgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+/* Three across: reference, left, right. The rater is comparing three pictures
+   and must be able to see all three at once. */
+.pairgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .side { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
 .side.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .side h3 {
@@ -224,22 +226,22 @@ a.home:hover h1 { color: var(--accent); }
    the verdict immediately under them. Choosing should not require looking away
    from what is being judged. */
 .stack { display: flex; flex-direction: column; gap: 16px; }
-.refcard { max-width: 520px; margin: 0 auto; text-align: center; }
+.refcard { max-width: none; margin: 0; text-align: center; }
 /* The reference is a 2x2 composite, so a 230px cap left each view about 110px
    -- the smallest picture on a page that exists to compare two things against
    it, and four views of a CAD part at 110px is not something a person can
    judge from. It is now the largest, which is the order that matches what the
    eye has to do. */
-/* The renders are 524x524. Capping the reference at 360 threw away a third
-   of the resolution on the one panel both candidates are judged against.
-   460 stays under native so nothing is ever upscaled, and keeps the
-   verdict buttons reachable without scrolling on a laptop. */
-.refcard .shot { max-width: none; max-height: 460px; object-fit: contain; margin: 0 auto; }
+/* The renders are 524x524, so nothing here is ever upscaled. All three panels
+   share one height: the reference is not more important than the candidates,
+   it is the thing they are both measured against, and a taller reference would
+   only push the row down. */
+.refcard .shot { max-width: none; max-height: 430px; object-fit: contain; margin: 0 auto; }
 
 /* Cap the candidate renders. At full width three 2x2 composites plus the
    controls cannot fit any normal viewport, and the point of moving the buttons
    under the images was to stop the eye travelling. */
-.pairgrid .shot { max-height: 300px; object-fit: contain; }
+.pairgrid .shot { max-height: 430px; object-fit: contain; }
 .refmeta {
   display: flex; justify-content: center; gap: 18px; flex-wrap: wrap;
   margin-top: 10px; font-size: 12px; color: var(--muted);
@@ -473,7 +475,8 @@ td.twoval .whymark {
 
   /* The cap exists to stop a render dominating a wide screen. On a phone it is
      the render that needs the room. */
-  .pairgrid { gap: 8px; }
+  /* One column on a phone: three across at that width is three thumbnails. */
+  .pairgrid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .pairgrid .shot { max-height: none; }
   .refcard { max-width: none; }
   /* Full width, but never the whole screen. Removing the desktop cap outright
