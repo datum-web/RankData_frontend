@@ -32,9 +32,18 @@ export function shuffleFor<T extends { id: string }>(pairs: T[], rater: string):
     (a, b) => hash(`order::${rater}::${a.id}`) - hash(`order::${rater}::${b.id}`));
 }
 
-/** The metric channels whose disagreement makes a pair worth asking about. */
+/**
+ * The metric channels whose disagreement makes a pair worth asking about.
+ *
+ * Only channels that reproduce. issue #14: `face`, `edge` and `q_l` return a
+ * different value for 23 % of rows when the same candidate is scored twice, so
+ * a "disagreement" they report is as likely to be run-to-run noise as a real
+ * split — and this list decides the shared core-200 that every rater sees, the
+ * most expensive slots in the corpus. `q_l` and `face` were in here; `pix_fg`
+ * and `topology`, which do reproduce, were not.
+ */
 export const CHANNELS = [
-  "aligned_iou", "q_l", "sil_iou", "dino_cos", "face",
+  "aligned_iou", "sil_iou", "pix_fg", "topology", "dino_cos",
 ] as const;
 
 /**

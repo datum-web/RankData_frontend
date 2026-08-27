@@ -56,21 +56,21 @@ describe("disagreement", () => {
 
   it("is 0 when every channel picks the same side", () => {
     expect(disagreement(from(
-      { aligned_iou: 0.9, q_l: 0.9, sil_iou: 0.9, dino_cos: 0.9, face: 0.9 },
-      { aligned_iou: 0.1, q_l: 0.1, sil_iou: 0.1, dino_cos: 0.1, face: 0.1 },
+      { aligned_iou: 0.9, pix_fg: 0.9, sil_iou: 0.9, dino_cos: 0.9, topology: 0.9 },
+      { aligned_iou: 0.1, pix_fg: 0.1, sil_iou: 0.1, dino_cos: 0.1, topology: 0.1 },
     ), pair)).toBe(0);
   });
 
   it("is 1 when they split evenly", () => {
     expect(disagreement(from(
-      { aligned_iou: 0.9, q_l: 0.9, sil_iou: 0.1, dino_cos: 0.1 },
-      { aligned_iou: 0.1, q_l: 0.1, sil_iou: 0.9, dino_cos: 0.9 },
+      { aligned_iou: 0.9, pix_fg: 0.9, sil_iou: 0.1, dino_cos: 0.1 },
+      { aligned_iou: 0.1, pix_fg: 0.1, sil_iou: 0.9, dino_cos: 0.9 },
     ), pair)).toBe(1);
   });
 
   it("is 0 when too few channels have an opinion to disagree", () => {
     // One vote is not a disagreement, and neither is none.
-    expect(disagreement(from({ face: 0.9 }, { face: 0.1 }), pair)).toBe(0);
+    expect(disagreement(from({ pix_fg: 0.9 }, { pix_fg: 0.1 }), pair)).toBe(0);
     expect(disagreement(from({}, {}), pair)).toBe(0);
   });
 
@@ -78,8 +78,8 @@ describe("disagreement", () => {
     // `topology` is 1.0 on both sides of most pairs; counting a tie as a vote
     // would drown the channels that actually separated them.
     const d = disagreement(from(
-      { aligned_iou: 0.9, q_l: 0.5, sil_iou: null },
-      { aligned_iou: 0.1, q_l: 0.5, sil_iou: 0.4 },
+      { aligned_iou: 0.9, topology: 0.5, sil_iou: null },
+      { aligned_iou: 0.1, topology: 0.5, sil_iou: 0.4 },
     ), pair);
     expect(d).toBe(0);          // one real vote left
   });
