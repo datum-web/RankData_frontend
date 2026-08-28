@@ -140,7 +140,19 @@ export default function GradePage() {
   // are being asked to judge. Off by default: wrong size should look wrong.
   const [fitOwn, setFitOwn] = useState(false);
   const [flipSide, setFlipSide] = useState<"left" | "right">("left");
+  // Default to the pictures when the browser cannot do 3-D at all, rather than
+  // opening on three empty boxes and making the rater find the other tab. The
+  // probe is a throwaway canvas, done once, and it never throws: a browser
+  // without WebGL returns null from getContext rather than raising.
   const [mode, setMode] = useState<"3d" | "image">("3d");
+  useEffect(() => {
+    let ok = false;
+    try {
+      const c = document.createElement("canvas");
+      ok = !!(c.getContext("webgl2") || c.getContext("webgl"));
+    } catch { ok = false; }
+    if (!ok) setMode("image");
+  }, []);
   const [orbit, setOrbit] = useState<Orbit>(DEFAULT_ORBIT);
   // Read inside the keydown handler, which is bound once; a state value there
   // would be the one captured at bind time.
