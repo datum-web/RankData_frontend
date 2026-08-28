@@ -1,5 +1,5 @@
 import { allJudgments, loadCorpus } from "@/lib/store";
-import { METRIC_ROWS } from "@/lib/types";
+import { ANALYSIS_METRICS } from "@/lib/types";
 import { isAdmin, raterFromRequest } from "@/lib/auth";
 import { countsNow } from "@/lib/store";
 import { CURRENT_STIMULUS, scoresFor } from "@/lib/corpus";
@@ -80,7 +80,10 @@ export async function GET(req: Request) {
     .sort((a, b) => String(a.rater).localeCompare(String(b.rater))
       || ((byPair.get(a.pair_id)?.case_no ?? 0) - (byPair.get(b.pair_id)?.case_no ?? 0)));
 
-  const keys = METRIC_ROWS.map((m) => m.key as string);
+  // types.ts documents ANALYSIS_METRICS as "for the analysis pages and the CSV
+  // export", but the export was built from METRIC_ROWS, so every channel under
+  // consideration was missing from the one artefact an outside analyst reads.
+  const keys = ANALYSIS_METRICS.map((m) => m.key as string);
   const header = [
     "rater", "case_no", "pair_id", "cohort", "family", "reference_id", "stimulus",
     "judged_at", "counts_now", "stimulus_equivalent", "metrics_were_wrong",

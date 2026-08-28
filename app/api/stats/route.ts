@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { allJudgments, backend, countsNow, loadCorpus } from "@/lib/store";
-import { METRIC_ROWS } from "@/lib/types";
+import { ANALYSIS_METRICS } from "@/lib/types";
 import { raterFromRequest } from "@/lib/auth";
 import { CURRENT_STIMULUS, scoresFor } from "@/lib/corpus";
 
@@ -74,8 +74,15 @@ export async function GET(req: Request) {
    */
   const stimulusOf = (j: any) => j.stimulus ?? "per-shape-normalised-v0";
 
+  // ANALYSIS_METRICS, not METRIC_ROWS: every channel that is computed gets
+  // scored against the verdicts, including the ones deliberately kept off the
+  // rater's panel. Restricting this to what the rater sees meant the down-select
+  // could never be checked against the thing that actually matters -- the five
+  // gates measure stability and dynamic range, not agreement with a person --
+  // and the channels being chosen between were the ones missing from the table.
+  // Showing them here anchors nobody: this is the dashboard, not the panel.
   function agreementOver(js: any[]) {
-    return METRIC_ROWS.map((row) => {
+    return ANALYSIS_METRICS.map((row) => {
       let agree = 0, usable = 0;
       for (const j of js) {
         const pair = byPair.get(j.pair_id);
