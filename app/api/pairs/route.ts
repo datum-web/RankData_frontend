@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { judgmentsFor, loadCorpus } from "@/lib/store";
 import { raterFromRequest } from "@/lib/auth";
+import { hash } from "@/lib/hash";
 import { METRIC_ROWS, type MetricStats, type PairView } from "@/lib/types";
 import { scoresFor } from "@/lib/corpus";
 import { isBlind } from "@/lib/blind";
@@ -100,8 +101,19 @@ export async function GET(req: Request) {
     .split(",").map((c) => c.trim()).filter(Boolean);
   const eligible = corpus.pairs.filter(
     (p) => !done.has(p.id) && (!cohorts.length || cohorts.includes(p.cohort ?? "")));
-  const info = new Map(eligible.map(
-    (p) => [p.id, disagreement(scoresForQueue.value, p)]));
+  // An anchor is a picture against a number, so it carries one channel and
+  // `disagreement` is 0 for every one of them -- which sorts all 360 into the
+  // last band, and a rater would meet their first anchor somewhere past pair
+  // 800. They are 30 % of the queue precisely so they are encountered
+  // throughout it, so they get a stable pseudo-random rank instead: spread
+  // evenly through the bands, and decorrelated between raters like everything
+  // else here.
+  const info = new Map(eligible.map((p) => [
+    p.id,
+    p.cohort === "score-anchor"
+      ? (hash(`anchor::${p.id}::${rater}`) % 1000) / 1000
+      : disagreement(scoresForQueue.value, p),
+  ]));
   const queue = buildQueue(eligible, {
     rater: rater!,
     info,
