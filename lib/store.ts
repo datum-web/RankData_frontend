@@ -54,6 +54,23 @@ function client() {
 // ------------------------------------------------------------------ corpus --
 
 let cached: Corpus | null = null;
+let cachedAt = 0;
+/**
+ * How long a loaded corpus is reused within one warm instance.
+ *
+ * The Supabase branch used to skip the cache entirely -- the `if (cached)`
+ * below sat in the filesystem branch only -- so every request refetched refs,
+ * candidates, active pairs AND all evaluations with their jsonb metric blobs:
+ * about 6,700 rows, paginated at 1,000, so eight round trips. `/api/pairs`
+ * measured 1.5-2.6 s, and it is the endpoint a rater hits between every
+ * judgment. The cost grew with the corpus, which had just tripled.
+ *
+ * A minute is chosen because the corpus only changes when someone publishes,
+ * and the worst case is a rater seeing the previous queue for under a minute.
+ * Verdicts are deliberately NOT cached: `judgmentsFor` stays live, or a rater
+ * would be handed a pair they just answered.
+ */
+const CORPUS_TTL_MS = 60_000;
 
 /**
  * Read a whole table, not the first page of it.
@@ -79,6 +96,8 @@ async function fetchAll(db: any, table: string, filter?: (q: any) => any) {
 }
 
 export async function loadCorpus(): Promise<Corpus> {
+  if (cached && Date.now() - cachedAt < CORPUS_TTL_MS) return cached;
+
   if (backend() === "supabase") {
     const db = client();
     const [refs, candidates, pairs, evaluations] = await Promise.all([
@@ -87,7 +106,7 @@ export async function loadCorpus(): Promise<Corpus> {
       fetchAll(db, "pl_pairs", (q: any) => q.eq("active", true)),
       fetchAll(db, "pl_evaluations"),
     ]).then((r) => r.map((data) => ({ data })));
-    return {
+    cached = {
       evaluations: evaluations.data.map((e: any) => ({
         candidate_id: e.candidate_id, ref_id: e.ref_id,
         metrics: e.metrics ?? {}, v1_iou: e.v1_iou ?? null,
@@ -106,6 +125,8 @@ export async function loadCorpus(): Promise<Corpus> {
       })),
       pairs: pairs.data.map((p: any) => ({ ...p, a: p.a_id, b: p.b_id, case_no: p.case_no })),
     };
+    cachedAt = Date.now();
+    return cached;
   }
 
   if (cached) return cached;
