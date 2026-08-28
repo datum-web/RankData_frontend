@@ -130,7 +130,8 @@ export default function AdminPage() {
           <div className="kv"><span>judged once</span><span>{cov.once}</span></div>
           <div className="kv"><span>judged twice or more</span><span>{cov.twice_or_more}</span></div>
           <p className="note" style={{ marginTop: 10 }}>
-            Only the last row supports inter-rater agreement. One opinion on a pair is
+            Only the last row can support inter-rater agreement, and only where the two
+            verdicts came from different people. One opinion on a pair is
             data; it is not agreement.
           </p>
         </div>

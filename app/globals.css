@@ -61,6 +61,15 @@ header.bar h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .2
 /* Three across: reference, left, right. The rater is comparing three pictures
    and must be able to see all three at once. */
 .pairgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+/* Below about 1100px, three across gives panels near 230px and the shapes stop
+   being legible, so stack instead. Deliberately 3 or 1, never 2: two columns
+   would put the reference beside one candidate and not the other, and the one
+   sharing a row with it would be the easier comparison. */
+@media (max-width: 1100px) {
+  .pairgrid { grid-template-columns: minmax(0, 1fr); }
+  .refcard .shot, .pairgrid .shot { max-height: 46vh; }
+}
 .side { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
 .side.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .side h3 {
