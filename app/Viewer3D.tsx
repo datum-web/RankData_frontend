@@ -105,7 +105,22 @@ export default function Viewer3D({
   useEffect(() => {
     const el = host.current;
     if (!el) return;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // three throws if it cannot get a WebGL context, and a throw inside an
+    // effect unmounts the whole React tree -- the rater loses the entire page
+    // to "Application error: a client-side exception has occurred", not just
+    // the viewer. Seen on a machine with no GPU acceleration (software
+    // renderer, sandboxed), which is what a VM, a remote desktop, or a browser
+    // with hardware acceleration switched off looks like. The still images are
+    // the primary stimulus and they are fine there, so a missing 3-D view must
+    // degrade to a line of text.
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (err: any) {
+      setState("error");
+      setDetail("this browser cannot open a 3-D view (no WebGL); the pictures above are the full stimulus");
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
@@ -190,7 +205,7 @@ export default function Viewer3D({
       } catch (err: any) {
         if (!cancelled) {
           setState("error");
-          setDetail(String(err?.message ?? err));
+          setDetail("mesh unavailable — " + String(err?.message ?? err));
         }
       }
     })();
@@ -250,7 +265,7 @@ export default function Viewer3D({
         <span>{label}</span>
         <span className="lose">
           {state === "loading" ? "loading…"
-            : state === "error" ? `mesh unavailable — ${detail}`
+            : state === "error" ? detail
             : detail}
         </span>
       </div>
