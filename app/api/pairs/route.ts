@@ -118,7 +118,17 @@ export async function GET(req: Request) {
     rater: rater!,
     info,
     corePairs: Number(process.env.PREFERENCE_LAB_CORE_PAIRS ?? 200),
-    mode: url.searchParams.get("order") === "shuffle" ? "shuffle" : "informative",
+    // Random, and random by default.
+    //
+    // The queue used to lead with the 200 most contested pairs and then band
+    // the rest by how much the metrics disagree. That makes the metrics choose
+    // which pairs a person is asked about -- and the verdicts are then used to
+    // judge those same metrics. A sample selected by the thing under test is
+    // not a sample of the corpus, and every rate computed from it (agreement,
+    // tie rate, difficulty) describes the contested tail rather than the
+    // benchmark. `?order=informative` still exists for looking at that tail
+    // deliberately; it is not what a rater gets.
+    mode: url.searchParams.get("order") === "informative" ? "informative" : "shuffle",
   });
 
   // `?after=<id>` returns the pair that follows the given one in this rater's
