@@ -690,17 +690,22 @@ export default function GradePage() {
                 committing the verdict nobody scrolls to it — so the side-by-side
                 comparison has to sit between the images and the buttons, where
                 the eye already is. */}
-            {view.blind ? (
-              /* Blind arm. Say so plainly: an empty space where the numbers
-                 usually are reads as a bug, and a rater who thinks the tool is
-                 broken behaves differently from one who knows the numbers are
-                 being withheld on purpose. */
+            {/* Blind arm, and only when the pair is not already an anchor --
+                an anchor hides the numbers for its own reason and says so
+                below, and two stacked explanations for one blank space read as
+                a fault rather than a design. */}
+            {view.blind && view.left.origin !== "anchor"
+                        && view.right.origin !== "anchor" ? (
+              /* Say so plainly: an empty space where the numbers usually are
+                 reads as a bug, and a rater who thinks the tool is broken
+                 behaves differently from one who knows they are withheld. */
               <div className="card blindcard">
-                <b>Metrics hidden for this pair.</b>
+                <b>Metrics hidden for this pair — about one in three is.</b>
                 <span>
-                  Every verdict collected before today was cast with the scores on
-                  screen, so none of them can say whether the metrics predict
-                  preference or merely anchor it. Judge this one on the pictures.
+                  With the scores on screen a verdict can only show that you
+                  agree with them once you have read them, which cannot tell us
+                  whether they predict what you prefer. Judge this one on the
+                  pictures alone.
                 </span>
               </div>
             ) : null}
