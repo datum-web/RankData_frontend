@@ -222,6 +222,11 @@ export default function GradePage() {
     );
     const data = await res.json();
     if (data.error) return setError(data.error);
+    showPair(data);
+  }, []);
+
+  /** Put a pair on screen and reset every per-pair timer. */
+  const showPair = useCallback((data: any) => {
     if (data.done) {
       setFinished(true);
       setView(null);
@@ -245,6 +250,11 @@ export default function GradePage() {
     fetch("/api/stats", { cache: "no-store" }).then((r) => r.json()).then(setStats).catch(() => {});
   }, []);
 
+  // The prefetched next pair, kept rather than discarded. Warming the images
+  // but throwing away the payload meant the click still waited on POST /judge
+  // and then GET /pairs in series, and both load the whole corpus.
+  const nextPair = useRef<any>(null);
+
   // Warm the next pair while this one is being looked at.
   //
   // Judging is one click, and everything after that click was serial: POST the
@@ -263,7 +273,9 @@ export default function GradePage() {
       fetch(`/api/pairs?after=${encodeURIComponent(view.pair.id)}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((next) => {
-          if (dead || !next || next.error || next.done) return;
+          if (dead || !next || next.error) return;
+          nextPair.current = next;
+          if (next.done) return;
           for (const src of [next.reference?.image, next.left?.image, next.right?.image]) {
             if (src) new Image().src = `/api/image/${src}`;
           }
@@ -297,6 +309,19 @@ export default function GradePage() {
     const judgedPairId = view.pair.id;
     const chosen =
       choice === "tie" ? null : choice === "left" ? view.left.id : view.right.id;
+    // Advance now, save in the background. The verdict is already decided the
+    // moment the button is pressed; making the rater watch two corpus loads
+    // before the next pair appears adds a second or more to every judgment and
+    // teaches them to distrust their own click. If the save fails they are told
+    // explicitly, with the pair named, rather than the failure being swallowed.
+    const queued = nextPair.current;
+    if (queued && !queued.done && !queued.error) {
+      nextPair.current = null;
+      showPair(queued);
+      setBusy(false);
+      setLastPairId(judgedPairId);
+    }
+
     const res = await fetch("/api/judge", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -324,11 +349,16 @@ export default function GradePage() {
     });
     const data = await res.json();
     setBusy(false);
-    if (data.error) return setError(data.error);
+    if (data.error) {
+      // Name the pair: by now the rater is looking at a different one, and
+      // "save failed" about an unnamed pair is worse than no message.
+      return setError(`could not save your verdict on ${judgedPairId}: ${data.error}`);
+    }
     // A single click commits, so keep a way back to the pair just judged.
     setLastPairId(judgedPairId);
-    await load(rater);
-  }, [view, busy, rater, notes, load]);
+    // Only when there was nothing prefetched to advance to.
+    if (!queued || queued.done || queued.error) await load(rater);
+  }, [view, busy, rater, notes, load, showPair]);
 
   // Keyboard: 1 left, 2 tie, 3 right; confidence uses q/w/e/r because 1-4 is
   // already taken. Only while a pair is on screen — otherwise these fire on the
