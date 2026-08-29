@@ -130,7 +130,10 @@ export async function GET(req: Request) {
     backend: backend(),
     corpus: {
       references: corpus.refs.length,
-      candidates: corpus.candidates.length,
+      // Anchors excluded: they are target numbers, not reconstructions, and
+      // counting them told the reader the corpus holds 3,518 candidates when
+      // 2,074 are solids and 1,444 are values from a fixed grid.
+      candidates: corpus.candidates.filter((c: any) => c.origin !== "anchor").length,
       pairs: corpus.pairs.length,
       families: tally(corpus.refs.map((r) => r.family)),
       cohorts: tally(corpus.pairs.map((p) => p.cohort ?? "unlabelled")),

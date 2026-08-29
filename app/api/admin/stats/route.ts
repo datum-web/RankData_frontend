@@ -228,7 +228,7 @@ export async function GET(req: Request) {
     return famRows.get(family)!;
   };
   for (const r of corpus.refs) famRow(r.family).refs += 1;
-  for (const c of corpus.candidates) {
+  for (const c of corpus.candidates.filter((c: any) => c.origin !== "anchor")) {
     const f = famOfRef.get(c.ref_id);
     if (f) famRow(f).candidates += 1;
   }
@@ -290,7 +290,10 @@ export async function GET(req: Request) {
     distribution,
     corpus: {
       references: corpus.refs.length,
-      candidates: corpus.candidates.length,
+      // Anchors excluded: they are target numbers, not reconstructions, and
+      // counting them told the reader the corpus holds 3,518 candidates when
+      // 2,074 are solids and 1,444 are values from a fixed grid.
+      candidates: corpus.candidates.filter((c: any) => c.origin !== "anchor").length,
       pairs: total,
       families: tally(corpus.refs.map((r) => r.family)),
       cohorts: tally(corpus.pairs.map((p) => p.cohort ?? "unlabelled")),
