@@ -78,8 +78,15 @@ export async function POST(req: Request) {
     // against the stimulus that produced it -- the first image set hid uniform
     // size errors entirely, so pooling the two sets would mix judgements about
     // a defect with judgements about a defect the rater could not see.
-    stimulus: corpus.candidates.find((c) => c.id === body.left_id)?.stimulus
-      ?? "per-shape-normalised-v0",
+    // From whichever side actually has one, not from `left`. An anchor is a
+    // number and carries no stimulus, so an anchor-on-the-left pair fell to the
+    // legacy default and every anchor verdict was stamped
+    // `per-shape-normalised-v0` -- saved, but excluded from every statistic
+    // that compares stimuli, which is all of them. Silent: the click succeeds
+    // and the verdict simply never counts.
+    stimulus: [body.left_id, body.right_id]
+      .map((id) => corpus.candidates.find((c) => c.id === id)?.stimulus)
+      .find((x) => x) ?? "per-shape-normalised-v0",
   };
 
   try {

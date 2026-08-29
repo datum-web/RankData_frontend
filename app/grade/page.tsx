@@ -705,7 +705,14 @@ export default function GradePage() {
               </div>
             </div>
 
-            {!view.blind && (
+            {/* The anchor guard belongs here too. The panel above is hidden for
+                an anchor pair and the copy tells the rater so -- then this
+                second table rendered the candidate's full score sheet anyway,
+                which is the exact thing the anchor cohort exists to prevent:
+                read the candidate's own aligned IoU first and "is this better
+                than 0.45" stops being a judgement and becomes arithmetic. */}
+            {!view.blind && view.left.origin !== "anchor"
+                          && view.right.origin !== "anchor" && (
             <div
               className="card scrollx"
               style={{ marginBottom: 16 }}
