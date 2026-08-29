@@ -118,6 +118,12 @@ export default function GradePage() {
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
     const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Verdicts the server did not accept. Advancing optimistically means a rater
+  // can keep judging while every save fails -- a session expires after an hour
+  // or two and nothing about the screen changes -- so a single failure stops
+  // the flow until it is resolved. Losing an hour of someone's judgments
+  // silently is the worst thing this tool could do.
+  const [unsaved, setUnsaved] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   // The blown-up view. `zoom` is which panel was clicked, so the overlay can
   // open on the thing the rater was already looking at.
@@ -294,6 +300,8 @@ export default function GradePage() {
     confidence: 1 | 2 | 3 | 4,
   ) => {
     if (!view || busy) return;
+    // Nothing new until the backlog clears, or the backlog grows silently.
+    if (unsaved.length) return;
     setBusy(true);
     setError(null);
     if (dwellFrom.current != null) {
@@ -322,10 +330,7 @@ export default function GradePage() {
       setLastPairId(judgedPairId);
     }
 
-    const res = await fetch("/api/judge", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    const body = {
         pair_id: view.pair.id,
         chosen_id: chosen,
         is_tie: choice === "tie",
@@ -344,21 +349,52 @@ export default function GradePage() {
         metric_dwell_ms: dwell.current,
         metric_interactions: interactions.current,
         notes,
-        client: { ua: navigator.userAgent, w: window.innerWidth },
-      }),
+      client: { ua: navigator.userAgent, w: window.innerWidth },
+    };
+    const res = await fetch("/api/judge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     setBusy(false);
     if (data.error) {
       // Name the pair: by now the rater is looking at a different one, and
       // "save failed" about an unnamed pair is worse than no message.
-      return setError(`could not save your verdict on ${judgedPairId}: ${data.error}`);
+      setUnsaved((u) => [...u, { body, pair_id: judgedPairId }]);
+      return setError(
+        /not authenticated|401/i.test(String(data.error))
+          ? "Your session expired, so that verdict was not saved. Sign in again in another tab, then press Retry — nothing is lost until you leave this page."
+          : `Could not save your verdict on ${judgedPairId}: ${data.error}`);
     }
     // A single click commits, so keep a way back to the pair just judged.
     setLastPairId(judgedPairId);
     // Only when there was nothing prefetched to advance to.
     if (!queued || queued.done || queued.error) await load(rater);
-  }, [view, busy, rater, notes, load, showPair]);
+  }, [view, busy, rater, notes, load, showPair, unsaved.length]);
+
+  /** Replay everything the server refused, oldest first. */
+  const retryUnsaved = useCallback(async () => {
+    const queue = [...unsaved];
+    const failed: any[] = [];
+    for (const item of queue) {
+      try {
+        const r = await fetch("/api/judge", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(item.body),
+        });
+        const d = await r.json();
+        if (d.error) failed.push(item);
+      } catch {
+        failed.push(item);
+      }
+    }
+    setUnsaved(failed);
+    setError(failed.length
+      ? `Still could not save ${failed.length} verdict(s). Check you are signed in.`
+      : null);
+  }, [unsaved]);
 
   // Keyboard: 1 left, 2 tie, 3 right; confidence uses q/w/e/r because 1-4 is
   // already taken. Only while a pair is on screen — otherwise these fire on the
@@ -429,7 +465,19 @@ export default function GradePage() {
         <Link className="pill" href="/">← dashboard</Link>
       </header>
 
-      {error && <div className="card" style={{ marginBottom: 16, borderColor: "var(--bad)" }}>{error}</div>}
+      {error && (
+        <div className="card" style={{ marginBottom: 16, borderColor: "var(--bad)" }}>
+          {error}
+          {unsaved.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <b>{unsaved.length} verdict(s) not saved.</b> Judging is paused until they are.
+              <button className="pill" style={{ marginLeft: 10 }} onClick={retryUnsaved}>
+                Retry saving
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {finished && (
         <div className="card done">
