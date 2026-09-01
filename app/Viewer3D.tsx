@@ -16,10 +16,14 @@ import * as THREE from "three";
  *  - **One camera.** Orbit any panel and all three turn together, so the eye
  *    compares the same aspect of all three solids instead of remembering one
  *    orientation while hunting for it in another.
- *  - **One scale.** Every solid is placed by the *reference's* centre and
- *    longest axis, the same rule the still images use, so a part that is 8 %
- *    small looks 8 % small here too rather than being auto-fitted to the frame
- *    and silently corrected.
+ *  - **One scale, own centre.** Every solid is divided by the *reference's*
+ *    longest axis, so a part that is 8 % small looks 8 % small rather than
+ *    being auto-fitted and silently corrected. But each is centred on its own
+ *    bounds, because where a solid sits in its file is arbitrary -- the
+ *    reference and the candidate are separate files with unrelated origins.
+ *    Sharing the reference's centre threw an off-origin candidate out of frame
+ *    and made it orbit around the outside rather than turn in place, showing a
+ *    coordinate convention as though it were a reconstruction error.
  */
 
 export type Frame = { centre: [number, number, number]; longest: number };
@@ -164,14 +168,24 @@ export default function Viewer3D({
         const { pos, idx, lo, hi } = decode(await res.arrayBuffer());
         if (cancelled) return;
 
-        // Place by the reference's frame, not this solid's own: that is what
-        // makes the three panels comparable in size. `fit` overrides it for a
-        // solid too small to see, and the footer says which is in force.
+        // SCALE by the reference, CENTRE on the solid's own bounds.
+        //
+        // The two are different kinds of difference and only one of them is a
+        // reconstruction error. Size is real: a part built 8 % small is wrong
+        // and must look wrong, so the divisor stays the reference's longest
+        // axis. Position is not: a solid sits wherever it was modelled, and the
+        // reference and the candidate come from separate files with unrelated
+        // origins -- one L-bracket here is centred at (50, 26, 10) against a
+        // reference at (0, 0, 0), purely because someone drew it off-origin.
+        //
+        // Centring everything on the reference's centre pushed that candidate
+        // half a part-length out of frame, and since the camera orbits the
+        // centre it swung around the outside instead of turning in place. That
+        // is not a defect being shown, it is a coordinate convention being
+        // mistaken for one.
         const ownSpan = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) || 1;
         const ratio = ownSpan / (frame.longest || 1);
-        const [cx, cy, cz] = fit
-          ? [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2]
-          : frame.centre;
+        const [cx, cy, cz] = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
         const k = 1 / (fit ? ownSpan : frame.longest || 1);
         for (let i = 0; i < pos.length; i += 3) {
           pos[i] = (pos[i] - cx) * k;
