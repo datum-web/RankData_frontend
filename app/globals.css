@@ -454,6 +454,9 @@ td.twoval .whymark {
    one is twice the size on a narrow screen -- and because the pictures do not
    move between taps, the thing that changes is the thing that differs. */
 .lbgrid.flip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Anchor pairs show two solids, not three: the anchor is a number and its cell
+   was eating a third of the zoom. */
+.lbgrid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 720px) { .lbgrid.flip { grid-template-columns: minmax(0, 1fr); } }
 
 .flipbar {

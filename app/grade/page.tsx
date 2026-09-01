@@ -144,7 +144,14 @@ export default function GradePage() {
   // single pixel. That size error is a real finding and the caption states the
   // ratio either way, but the rater still has to be able to see the shape they
   // are being asked to judge. Off by default: wrong size should look wrong.
+  // Reference scale by default, because a part that is the wrong size should
+  // look the wrong size. But 345 of 880 candidates are the right shape written
+  // at a unit-less round number -- box(1,1,1) where the reference is 200 mm --
+  // and at 1/200 the solid is a dot, so the rater is asked to judge a shape
+  // they cannot see. When the ratio is that extreme the zoom opens fitted, and
+  // says so, with the toggle one click away.
   const [fitOwn, setFitOwn] = useState(false);
+  const [autoFitted, setAutoFitted] = useState(false);
   const [flipSide, setFlipSide] = useState<"left" | "right">("left");
   // Default to the pictures when the browser cannot do 3-D at all, rather than
   // opening on three empty boxes and making the rater find the other tab. The
@@ -167,6 +174,18 @@ export default function GradePage() {
   const flipRef = useRef(false);
   flipRef.current = flip;
 
+  /** How much smaller the smaller solid is than the reference frame. */
+  const scaleGap = useCallback(() => {
+    const ref = (view?.reference as any)?.frame?.longest;
+    if (!ref) return 1;
+    const own = [view?.left, view?.right]
+      .filter((c: any) => c && c.origin !== "anchor")
+      .map((c: any) => c?.frame?.longest)
+      .filter((x: any) => typeof x === "number" && x > 0);
+    if (!own.length) return 1;
+    return Math.min(...own.map((x: number) => x / ref));
+  }, [view]);
+
   const openZoom = useCallback((which: "reference" | "left" | "right") => {
     // A phone has room for two panels, not three. Opening straight into flip
     // mode saves the rater discovering the button before the view is usable.
@@ -174,8 +193,15 @@ export default function GradePage() {
       setFlip(true);
       if (which !== "reference") setFlipSide(which);
     }
+    // Below a fifth of the reference's longest axis the solid is a speck at
+    // reference scale and the zoom shows nothing. Open fitted instead, and
+    // label it, so the size error is still stated rather than quietly undone.
+    const gap = scaleGap();
+    const tiny = gap < 0.2;
+    setFitOwn(tiny);
+    setAutoFitted(tiny);
     setZoom(which);
-  }, []);
+  }, [scaleGap]);
 
   // --- timing. Decision latency is a recorded signal, not telemetry: with the
   // metrics visible it is what separates "obvious at a glance" from "argued
@@ -529,6 +555,7 @@ export default function GradePage() {
                       onClick={() => setFitOwn((v) => !v)}
                       title="show each solid at its own size — the ratio stays in the caption">
                 {fitOwn ? "fit: own size" : "fit: reference size"}
+                {autoFitted && fitOwn ? " (auto)" : ""}
               </button>
               <button className="pill" data-on={flip ? 1 : 0}
                       onClick={() => setFlip((v) => !v)}
@@ -538,7 +565,17 @@ export default function GradePage() {
               <button className="pill" onClick={() => setZoom(null)}>close ✕</button>
             </div>
 
-            <div className={`lbgrid${flip ? " flip" : ""}`}>
+            {autoFitted && (
+              <p className="note" style={{ marginBottom: 10 }}>
+                This candidate is under a fifth of the reference&apos;s size, so
+                it is shown fitted to its own bounds — otherwise it is a dot.
+                The size error is real and the metrics still count it; switch to
+                <b> fit: reference size</b> to see it.
+              </p>
+            )}
+            <div className={`lbgrid${flip ? " flip" : ""}`
+                 + ((view.left.origin === "anchor" || view.right.origin === "anchor")
+                    ? " two" : "")}>
               {([
                 ["reference", view.reference.mesh ?? null, view.reference.image, "reference — ground truth", 0x8a94a6],
                 ["left", view.left.mesh ?? null, view.left.image, "left", 0x6ec3c0],
@@ -548,6 +585,13 @@ export default function GradePage() {
                 // selected one is mounted -- the other must not be laid out at
                 // all or the swap moves the picture, which is the one thing
                 // this view exists to avoid.
+                // An anchor has no solid, and in the zoom it was still taking a
+                // full third of the width for a card that says so -- the two
+                // things actually being compared were squeezed into two thirds
+                // for no reason. The panel above already explains the anchor.
+                .filter(([key]) => !(
+                  (key === "left" && view.left.origin === "anchor") ||
+                  (key === "right" && view.right.origin === "anchor")))
                 .filter(([key]) => !flip || key === "reference" || key === flipSide)
                 .map(([key, mesh, image, label, colour]) => (
                 <div key={key} className={`lbcell${zoom === key ? " focused" : ""}`}>
