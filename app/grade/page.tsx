@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { METRIC_ROWS, type Candidate, type PairView } from "@/lib/types";
 import { explainWarnings } from "@/lib/corpus";
 import Viewer3D, { DEFAULT_ORBIT, type Orbit } from "../Viewer3D";
+import { isAnchorPair, shouldAutoFit, showsMetrics, zoomPanels } from "@/lib/view";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -196,8 +197,7 @@ export default function GradePage() {
     // Below a fifth of the reference's longest axis the solid is a speck at
     // reference scale and the zoom shows nothing. Open fitted instead, and
     // label it, so the size error is still stated rather than quietly undone.
-    const gap = scaleGap();
-    const tiny = gap < 0.2;
+    const tiny = shouldAutoFit(view as any);
     setFitOwn(tiny);
     setAutoFitted(tiny);
     setZoom(which);
@@ -574,8 +574,7 @@ export default function GradePage() {
               </p>
             )}
             <div className={`lbgrid${flip ? " flip" : ""}`
-                 + ((view.left.origin === "anchor" || view.right.origin === "anchor")
-                    ? " two" : "")}>
+                 + (isAnchorPair(view as any) ? " two" : "")}>
               {([
                 ["reference", view.reference.mesh ?? null, view.reference.image, "reference — ground truth", 0x8a94a6],
                 ["left", view.left.mesh ?? null, view.left.image, "left", 0x6ec3c0],
@@ -589,9 +588,7 @@ export default function GradePage() {
                 // full third of the width for a card that says so -- the two
                 // things actually being compared were squeezed into two thirds
                 // for no reason. The panel above already explains the anchor.
-                .filter(([key]) => !(
-                  (key === "left" && view.left.origin === "anchor") ||
-                  (key === "right" && view.right.origin === "anchor")))
+                .filter(([key]) => zoomPanels(view as any).includes(key as any))
                 .filter(([key]) => !flip || key === "reference" || key === flipSide)
                 .map(([key, mesh, image, label, colour]) => (
                 <div key={key} className={`lbcell${zoom === key ? " focused" : ""}`}>
@@ -738,8 +735,7 @@ export default function GradePage() {
                 an anchor hides the numbers for its own reason and says so
                 below, and two stacked explanations for one blank space read as
                 a fault rather than a design. */}
-            {view.blind && view.left.origin !== "anchor"
-                        && view.right.origin !== "anchor" ? (
+            {view.blind && !isAnchorPair(view as any) ? (
               /* Say so plainly: an empty space where the numbers usually are
                  reads as a bug, and a rater who thinks the tool is broken
                  behaves differently from one who knows they are withheld. */
@@ -753,7 +749,7 @@ export default function GradePage() {
                 </span>
               </div>
             ) : null}
-            {!view.blind && view.left.origin !== "anchor" && view.right.origin !== "anchor" && (
+            {showsMetrics(view as any) && (
             <div className="card scoreband">
               <div className="scorehead">
                 <span>metric</span><span className="num">left</span>
@@ -789,7 +785,7 @@ export default function GradePage() {
               </p>
             </div>
             )}
-            {(view.left.origin === "anchor" || view.right.origin === "anchor") && (
+            {isAnchorPair(view as any) && (
               <p className="note anchornote">
                 One side is a number. Judge the render against it: is this
                 reconstruction better or worse than a part that scores exactly
@@ -838,8 +834,7 @@ export default function GradePage() {
                 which is the exact thing the anchor cohort exists to prevent:
                 read the candidate's own aligned IoU first and "is this better
                 than 0.45" stops being a judgement and becomes arithmetic. */}
-            {!view.blind && view.left.origin !== "anchor"
-                          && view.right.origin !== "anchor" && (
+            {showsMetrics(view as any) && (
             <div
               className="card scrollx"
               style={{ marginBottom: 16 }}
