@@ -43,8 +43,11 @@ export function shuffleFor<T extends { id: string }>(pairs: T[], rater: string):
  * and `topology`, which do reproduce, were not.
  */
 export const CHANNELS = [
-  "aligned_iou", "sil_iou", "pix_fg", "topology", "dino_cos",
+  "aligned_iou", "sil_iou", "pix_fg", "topology", "dino_cos", "iou24",
 ] as const;
+// `prim_score` is deliberately absent. Both candidates in a pair share the same
+// x0, so (x - x0)/(1 - x0) is monotone in `iou24` within a pair and orders them
+// identically -- including it would give one signal two votes.
 
 /**
  * How much the metric channels disagree about a pair, 0 to 1.

@@ -222,6 +222,18 @@ export const METRIC_ROWS: MetricRow[] = [
   // background. It is silhouette IoU made finer -- per-pixel appearance where
   // the outline uses per-pixel occupancy -- which is why the two sit together.
   { key: "pix_fg", label: "Pixel agreement (2D)", hint: "share of the part's pixels that look the same, on the image shown", short: "pix" },
+  // Chance-corrected: (iou24 - x0) / (1 - x0), clamped at 0.
+  //
+  // Raw IoU is not comparable between parts. A washer is 96.8 % of its own
+  // minimal enclosing cylinder, so a model that draws a plain cylinder scores
+  // 0.97 and looks competent; a bolt's cylinder is 0.49 and the same work reads
+  // as poor. x0 is exactly that head start and this removes it. Zero means "no
+  // better than a primitive" -- a bucket, not a scale, which is why it clamps
+  // instead of going negative.
+  //
+  // Measured over 2,484 pairs: raw 24-axis IoU has a median of 0.580, and this
+  // has a median of 0.028. Half the corpus does not beat a box.
+  { key: "prim_score", label: "Above-primitive score", hint: "(24-axis IoU - primitive floor) / (1 - floor), clamped at 0: how much better than the best enclosing sphere, cylinder or box", short: "vs-prim" },
 ];
 
 /**
@@ -240,6 +252,10 @@ export const ANALYSIS_ONLY: MetricRow[] = [
   { key: "sam3_hand", label: "SAM3 hand (2D)", hint: "per-family vocabulary; 40 % of its scores are exactly 0", short: "s3-hand" },
   { key: "sam3_vlm", label: "SAM3 VLM vocab (2D)", hint: "vocabulary read off the reference render; declines 5 % of pairs", short: "s3-vlm" },
   { key: "depth_iou", label: "Depth-slice IoU (2D)", hint: "silhouette IoU over nested depth slices; measured as a restatement of the outline", short: "depth" },
+  // Shown beside the corrected score so the correction is auditable rather
+  // than a black box: these two are its inputs.
+  { key: "iou24", label: "24-axis IoU", hint: "best voxel overlap over the 24 proper axis-aligned rotations; orientation searched, mirrors excluded", short: "iou24" },
+  { key: "prim_x0", label: "Primitive floor (x0)", hint: "what the minimal enclosing sphere, cylinder or box already scores on this reference", short: "x0" },
 ];
 
 /** Everything computed, for the analysis pages and the CSV export. */
