@@ -1,5 +1,15 @@
 export type Metrics = {
   aligned_iou: number | null;
+  /** Best voxel overlap over the 24 proper axis-aligned rotations. Orientation
+   *  is searched so a coordinate convention does not read as a shape error;
+   *  mirrors are excluded because a mirrored part is a different part. */
+  iou24?: number | null;
+  /** What the minimal enclosing sphere, cylinder or box already scores on this
+   *  reference -- the head start a model gets for free on a round part. */
+  prim_x0?: number | null;
+  /** (iou24 - prim_x0) / (1 - prim_x0), clamped at 0. Comparable between parts
+   *  in a way raw IoU is not. */
+  prim_score?: number | null;
   topology: number | null;
   face: number | null;
   edge: number | null;
