@@ -4,12 +4,20 @@ export type Metrics = {
    *  is searched so a coordinate convention does not read as a shape error;
    *  mirrors are excluded because a mirrored part is a different part. */
   iou24?: number | null;
+  /** The same voxel overlap in the orientation actually shown, with no rotation
+   *  search. `iou24 - iou1` is what the search buys: a median of 0.001 across
+   *  the corpus, but more than 0.05 on 422 of 2,484 candidates. */
+  iou1?: number | null;
   /** What the minimal enclosing sphere, cylinder or box already scores on this
    *  reference -- the head start a model gets for free on a round part. */
-  prim_x0?: number | null;
-  /** (iou24 - prim_x0) / (1 - prim_x0), clamped at 0. Comparable between parts
-   *  in a way raw IoU is not. */
-  prim_score?: number | null;
+  iou_baseline?: number | null;
+  /** (iou24 - iou_baseline + e) / (1 - iou_baseline + e), clamped at 0, e =
+   *  0.001. Comparable between parts in a way raw IoU is not. */
+  iou24_norm?: number | null;
+  /** The same correction on the single-axis IoU, against the same floor: the
+   *  floor is a property of the reference and does not depend on how the
+   *  candidate is turned. */
+  iou_norm?: number | null;
   topology: number | null;
   face: number | null;
   edge: number | null;
@@ -243,7 +251,12 @@ export const METRIC_ROWS: MetricRow[] = [
   //
   // Measured over 2,484 pairs: raw 24-axis IoU has a median of 0.580, and this
   // has a median of 0.028. Half the corpus does not beat a box.
-  { key: "prim_score", label: "Above-primitive score", hint: "(24-axis IoU - primitive floor) / (1 - floor), clamped at 0: how much better than the best enclosing sphere, cylinder or box", short: "vs-prim" },
+  { key: "iou24_norm", label: "Normalised IoU (24-axis)", hint: "(24-axis IoU - baseline) / (1 - baseline), clamped at 0: how much better than the best enclosing sphere, cylinder or box", short: "iou24n" },
+  // The same correction on the orientation actually shown. Both are on the
+  // panel because they answer different questions: the 24-axis one forgives a
+  // coordinate convention, this one does not, and a part that is right but
+  // turned reads very differently between them.
+  { key: "iou_norm", label: "Normalised IoU (as shown)", hint: "(IoU in the shown orientation - baseline) / (1 - baseline), clamped at 0: no rotation search, so a turned part scores low here", short: "iou-n" },
 ];
 
 /**
@@ -265,7 +278,8 @@ export const ANALYSIS_ONLY: MetricRow[] = [
   // Shown beside the corrected score so the correction is auditable rather
   // than a black box: these two are its inputs.
   { key: "iou24", label: "24-axis IoU", hint: "best voxel overlap over the 24 proper axis-aligned rotations; orientation searched, mirrors excluded", short: "iou24" },
-  { key: "prim_x0", label: "Primitive floor (x0)", hint: "what the minimal enclosing sphere, cylinder or box already scores on this reference", short: "x0" },
+  { key: "iou1", label: "IoU as shown", hint: "the same voxel overlap with no rotation search, in the orientation on screen", short: "iou1" },
+  { key: "iou_baseline", label: "Primitive baseline", hint: "what the minimal enclosing sphere, cylinder or box already scores on this reference", short: "base" },
 ];
 
 /** Everything computed, for the analysis pages and the CSV export. */

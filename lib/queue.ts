@@ -45,9 +45,14 @@ export function shuffleFor<T extends { id: string }>(pairs: T[], rater: string):
 export const CHANNELS = [
   "aligned_iou", "sil_iou", "pix_fg", "topology", "dino_cos", "iou24",
 ] as const;
-// `prim_score` is deliberately absent. Both candidates in a pair share the same
-// x0, so (x - x0)/(1 - x0) is monotone in `iou24` within a pair and orders them
-// identically -- including it would give one signal two votes.
+// `iou24_norm` and `iou_norm` are deliberately absent. Both candidates in a
+// pair share the reference and so share its baseline, and the correction is a
+// positive rescaling: measured over 222 directional verdicts it ordered every
+// one of the 222 exactly as raw `iou24` did. Clamped it abstains on 102 of
+// them -- the half where both reconstructions fall below the floor, and where
+// raw iou24 is at its most reliable (71.6 % against 56.7 %). Either way it
+// adds no vote here. It earns its place on the panel and in reporting, where
+// the job is comparing across parts rather than ordering within one.
 
 /**
  * How much the metric channels disagree about a pair, 0 to 1.
