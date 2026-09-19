@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { allJudgments, backend, countsNow, loadCorpus } from "@/lib/store";
 import { ANALYSIS_METRICS } from "@/lib/types";
-import { raterFromRequest } from "@/lib/auth";
+import { isAdmin, raterFromRequest } from "@/lib/auth";
 import { CURRENT_STIMULUS, scoresFor } from "@/lib/corpus";
 
 export const dynamic = "force-dynamic";
@@ -36,8 +36,10 @@ const tally = (xs: (string | number)[]) => {
  */
 export async function GET(req: Request) {
   let me: string | null;
+  let admin = false;
   try {
     me = (await raterFromRequest(req))?.email ?? null;
+    admin = !!me && isAdmin(me);
   } catch (err: any) {
     return NextResponse.json({ error: err?.message ?? "server not configured" }, { status: 500 });
   }
@@ -126,8 +128,29 @@ export async function GET(req: Request) {
   const mineScored = mine.filter((j) => !j.is_tie && j.chosen_id);
   const myLeft = mineScored.filter((j) => j.chosen_id === j.left_id).length;
 
+  // How many people are taking part and how many verdicts exist are the
+  // study's figures, not a rater's. A rater who can watch the total climb
+  // knows how far along the study is and how thin their own contribution is
+  // against it; neither should bear on the next pair. So `all` is returned to
+  // administrators only, and the agreement table goes to everyone else as
+  // rates alone -- the counts under a rate are the total by another name.
+  // Enforced here, not in the page: the page is not what a curious rater
+  // reads, the response is.
+  const pooled = {
+    judgments: judgments.length,
+    stimulus: CURRENT_STIMULUS,
+    metric_agreement_by_stimulus: byStimulus,
+    superseded_verdicts: superseded,
+    carried_verdicts: carried,
+    carried_with_wrong_metrics,
+    raters: [...new Set(judgments.map((j) => j.rater))],
+    ties: judgments.length - scored.length,
+    median_decision_ms: median(judgments.map((j) => j.decision_ms).filter(Number.isFinite)),
+  };
+
   return NextResponse.json({
     backend: backend(),
+    is_admin: admin,
     corpus: {
       references: corpus.refs.length,
       // Anchors excluded: they are target numbers, not reconstructions, and
@@ -151,17 +174,9 @@ export async function GET(req: Request) {
       // not geometry, is driving the choice.
       left_pick_rate: mineScored.length ? myLeft / mineScored.length : null,
     },
-    all: {
-      judgments: judgments.length,
-      stimulus: CURRENT_STIMULUS,
-      metric_agreement_by_stimulus: byStimulus,
-      superseded_verdicts: superseded,
-      carried_verdicts: carried,
-      carried_with_wrong_metrics,
-      raters: [...new Set(judgments.map((j) => j.rater))],
-      ties: judgments.length - scored.length,
-      median_decision_ms: median(judgments.map((j) => j.decision_ms).filter(Number.isFinite)),
-    },
-    metric_agreement,
+    all: admin ? pooled : undefined,
+    metric_agreement: admin
+      ? metric_agreement
+      : metric_agreement.map((m) => ({ key: m.key, label: m.label, rate: m.rate })),
   });
 }

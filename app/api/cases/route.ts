@@ -56,8 +56,15 @@ export async function GET(req: Request) {
   const famOf = new Map(corpus.refs.map((r) => [r.id, r.family]));
   const refImg = new Map(corpus.refs.map((r) => [r.id, r.image]));
   const refImgV0 = new Map(corpus.refs.map((r) => [r.id, (r as any).image_v0 ?? r.image]));
+  // Whose verdicts appear on a row. An administrator sees everyone's; a rater
+  // sees their own. Sending every rater's verdict -- with the rater's address
+  // on it -- to whoever asked meant any rater could read the roster off the
+  // rows, count the study, and see which way the others went on a pair they
+  // had not judged yet. The roster below was already administrator-only; the
+  // rows carried the same information in a different shape.
   const perPair = new Map<string, any[]>();
   for (const j of judgments) {
+    if (!admin && j.rater !== subject) continue;
     if (!perPair.has(j.pair_id)) perPair.set(j.pair_id, []);
     perPair.get(j.pair_id)!.push(j);
   }

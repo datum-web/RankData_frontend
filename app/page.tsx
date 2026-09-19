@@ -221,23 +221,27 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="card">
-          <h2>Everyone</h2>
-          <div className="kv"><span>verdicts</span><span>{all?.judgments ?? 0}</span></div>
-          <div className="kv"><span>raters</span><span>{all?.raters?.length ?? 0}</span></div>
-          <div className="kv"><span>ties</span><span>{all?.ties ?? 0}</span></div>
-          <div className="kv"><span>median per pair</span><span>{fmtMs(all?.median_decision_ms)}</span></div>
-          <p className="note" style={{ marginTop: 10 }}>
-            Pooled across every rater, your own rows included.
-          </p>
-        </div>
+        {all && (
+          <div className="card">
+            <h2>Everyone</h2>
+            <div className="kv"><span>verdicts</span><span>{all.judgments ?? 0}</span></div>
+            <div className="kv"><span>raters</span><span>{all.raters?.length ?? 0}</span></div>
+            <div className="kv"><span>ties</span><span>{all.ties ?? 0}</span></div>
+            <div className="kv"><span>median per pair</span><span>{fmtMs(all.median_decision_ms)}</span></div>
+            <p className="note" style={{ marginTop: 10 }}>
+              Pooled across every rater, your own rows included. Administrators only:
+              the server returns these figures to nobody else.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Would this metric alone have picked what the experts picked?</h2>
-        {(all?.judgments ?? 0) === 0 ? (
+        {stats.metric_agreement.every((m: any) => m.rate == null)
+           && (all == null || (all.judgments ?? 0) === 0) ? (
           <p className="note">No verdicts yet — grade a few pairs and this fills in.</p>
-        ) : (all?.carried_verdicts ?? 0) === 0
+        ) : all && (all.carried_verdicts ?? 0) === 0
              && stats.metric_agreement.every((m: any) => !m.usable) ? (
           <p className="note">
             <b>{all.superseded_verdicts} verdicts are recorded and none can be counted
@@ -251,14 +255,20 @@ export default function Dashboard() {
           <>
             <table className="metrics">
               <thead>
-                <tr><th>metric</th><th>agrees</th><th>of</th><th style={{ width: 280 }}>rate</th></tr>
+                <tr>
+                  <th>metric</th>
+                  {all && <><th>agrees</th><th>of</th></>}
+                  <th style={{ width: 280 }}>rate</th>
+                </tr>
               </thead>
               <tbody>
                 {stats.metric_agreement.map((m: any) => (
                   <tr key={m.key}>
                     <td>{m.label}</td>
-                    <td className="num">{m.agree}</td>
-                    <td className="num lose">{m.usable}</td>
+                    {all && <>
+                      <td className="num">{m.agree}</td>
+                      <td className="num lose">{m.usable}</td>
+                    </>}
                     <td>
                       {m.rate == null ? <span className="na">no usable pairs</span> : (
                         <div className="ratebar">
@@ -271,7 +281,7 @@ export default function Dashboard() {
                 ))}
               </tbody>
             </table>
-            {(all?.carried_verdicts ?? 0) > 0 && (
+            {all && (all.carried_verdicts ?? 0) > 0 && (
               <p className="note" style={{ marginTop: 12 }}>
                 <b>{all.carried_verdicts} of these were made against the earlier
                 images and are counted anyway.</b> Those images differed in framing

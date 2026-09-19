@@ -510,7 +510,8 @@ export default function GradePage() {
           <h2>Every pair judged.</h2>
           <p><Link className="pill" href="/">see the dashboard</Link></p>
           <p className="note">
-            {stats?.mine?.judged ?? 0} verdicts from you, {stats?.all?.judgments ?? 0} in total.
+            {stats?.mine?.judged ?? 0} verdicts from you{stats?.all
+              ? `, ${stats.all.judgments ?? 0} in total` : ""}.
             Median decision time{" "}
             {stats?.mine?.median_decision_ms != null
               ? `${(stats.mine.median_decision_ms / 1000).toFixed(1)} s`
