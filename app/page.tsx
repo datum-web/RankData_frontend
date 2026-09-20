@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { agreementCard } from "@/lib/dashboard";
 import Link from "next/link";
 import BackToTop from "./BackToTop";
 import FamilyChart from "./FamilyChart";
@@ -238,11 +239,9 @@ export default function Dashboard() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Would this metric alone have picked what the experts picked?</h2>
-        {!stats || (stats.metric_agreement.every((m: any) => m.rate == null)
-           && (all == null || (all.judgments ?? 0) === 0)) ? (
+        {agreementCard(stats) === "empty" ? (
           <p className="note">No verdicts yet — grade a few pairs and this fills in.</p>
-        ) : all && (all.carried_verdicts ?? 0) === 0
-             && stats.metric_agreement.every((m: any) => !m.usable) ? (
+        ) : agreementCard(stats) === "superseded" ? (
           <p className="note">
             <b>{all.superseded_verdicts} verdicts are recorded and none can be counted
             here.</b> Each covers a pair containing a candidate whose only defect is a
