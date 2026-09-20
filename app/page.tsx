@@ -238,8 +238,8 @@ export default function Dashboard() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Would this metric alone have picked what the experts picked?</h2>
-        {stats.metric_agreement.every((m: any) => m.rate == null)
-           && (all == null || (all.judgments ?? 0) === 0) ? (
+        {!stats || (stats.metric_agreement.every((m: any) => m.rate == null)
+           && (all == null || (all.judgments ?? 0) === 0)) ? (
           <p className="note">No verdicts yet — grade a few pairs and this fills in.</p>
         ) : all && (all.carried_verdicts ?? 0) === 0
              && stats.metric_agreement.every((m: any) => !m.usable) ? (
